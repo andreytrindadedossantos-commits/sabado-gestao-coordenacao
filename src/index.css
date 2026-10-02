@@ -482,3 +482,192 @@ html.dark .schedule-date small{
     margin-top:8px!important;
   }
 }
+
+
+/* V26 — cores adaptadas automaticamente ao tema */
+
+/* Tema claro */
+.edit-schedule,
+.edit-icon,
+.notice-action,
+.celeb button,
+.read-all,
+.delete-notifications-btn,
+.link-btn {
+  background:#eef4ff !important;
+  color:#1f5fc4 !important;
+  border:1px solid #b9cbed !important;
+  box-shadow:none !important;
+}
+
+.edit-schedule:hover,
+.edit-icon:hover,
+.notice-action:hover,
+.celeb button:hover,
+.read-all:hover,
+.delete-notifications-btn:hover,
+.link-btn:hover {
+  background:#dfeaff !important;
+  color:#174da0 !important;
+}
+
+.schedule-delete,
+.danger-icon,
+.notice-delete {
+  background:#fff2f1 !important;
+  color:#c7372f !important;
+  border:1px solid #efc4c1 !important;
+}
+
+.schedule-delete:hover,
+.danger-icon:hover,
+.notice-delete:hover {
+  background:#ffe3e0 !important;
+}
+
+/* Tema escuro/cinza */
+html.dark .edit-schedule,
+html.dark .edit-icon,
+html.dark .notice-action,
+html.dark .celeb button,
+html.dark .read-all,
+html.dark .delete-notifications-btn,
+html.dark .link-btn {
+  background:#343b45 !important;
+  color:#ffffff !important;
+  border:1px solid #697585 !important;
+  box-shadow:none !important;
+}
+
+html.dark .edit-schedule:hover,
+html.dark .edit-icon:hover,
+html.dark .notice-action:hover,
+html.dark .celeb button:hover,
+html.dark .read-all:hover,
+html.dark .delete-notifications-btn:hover,
+html.dark .link-btn:hover {
+  background:#414a56 !important;
+  color:#ffffff !important;
+}
+
+html.dark .schedule-delete,
+html.dark .danger-icon,
+html.dark .notice-delete {
+  background:#4a2a2c !important;
+  color:#ffffff !important;
+  border:1px solid #95565b !important;
+}
+
+html.dark .schedule-delete:hover,
+html.dark .danger-icon:hover,
+html.dark .notice-delete:hover {
+  background:#5b3336 !important;
+}
+
+/* Botões principais */
+.primary,
+.compact-action {
+  background:#2f6ee6 !important;
+  color:#ffffff !important;
+  border-color:#2f6ee6 !important;
+}
+.primary:hover,
+.compact-action:hover {
+  background:#245fc9 !important;
+}
+
+/* Campos e linhas acompanham o tema */
+html.dark .schedule-panel,
+html.dark .schedule-row {
+  background:#2b3139 !important;
+  border-color:#444d59 !important;
+}
+html.dark .schedule-field,
+html.dark .schedule-field b,
+html.dark .schedule-date b,
+html.dark .schedule-date small,
+html.dark .field-label,
+html.dark .text-separator {
+  color:#ffffff !important;
+}
+
+
+/* V27 — correção definitiva dos botões no tema cinza escuro */
+html.dark button{
+  -webkit-appearance:none !important;
+  appearance:none !important;
+}
+
+/* Botões de ação secundária */
+html.dark .celeb > button,
+html.dark .celeb button,
+html.dark button.edit-schedule,
+html.dark button.edit-icon,
+html.dark button.notice-action,
+html.dark button.read-all,
+html.dark button.delete-notifications-btn,
+html.dark button.link-btn,
+html.dark button.icon-close,
+html.dark button.ghost-btn,
+html.dark button.top-icon-btn {
+  background:#343b45 !important;
+  background-image:none !important;
+  color:#ffffff !important;
+  border:1px solid #697585 !important;
+  box-shadow:none !important;
+  filter:none !important;
+  opacity:1 !important;
+}
+
+html.dark .celeb > button:hover,
+html.dark .celeb button:hover,
+html.dark button.edit-schedule:hover,
+html.dark button.edit-icon:hover,
+html.dark button.notice-action:hover,
+html.dark button.read-all:hover,
+html.dark button.delete-notifications-btn:hover,
+html.dark button.link-btn:hover,
+html.dark button.icon-close:hover,
+html.dark button.ghost-btn:hover,
+html.dark button.top-icon-btn:hover {
+  background:#414a56 !important;
+  color:#ffffff !important;
+}
+
+/* Botões principais permanecem azuis */
+html.dark button.primary,
+html.dark button.compact-action,
+html.dark .section-head > button.primary {
+  background:#2f6ee6 !important;
+  background-image:none !important;
+  color:#ffffff !important;
+  border-color:#2f6ee6 !important;
+}
+
+/* Excluir/perigo */
+html.dark button.danger-icon,
+html.dark button.notice-delete,
+html.dark button.schedule-delete {
+  background:#4a2a2c !important;
+  background-image:none !important;
+  color:#ffffff !important;
+  border:1px solid #95565b !important;
+}
+
+/* Evita botão branco nativo em cards e formulários */
+html.dark .panel button:not(.primary):not(.yes):not(.no):not(.yes-rsvp):not(.no-rsvp):not(.danger-icon):not(.notice-delete):not(.schedule-delete),
+html.dark .celeb button {
+  background-color:#343b45 !important;
+  color:#ffffff !important;
+}
+
+/* Tema claro */
+html:not(.dark) .celeb > button,
+html:not(.dark) button.edit-schedule,
+html:not(.dark) button.edit-icon,
+html:not(.dark) button.notice-action {
+  background:#eef4ff !important;
+  color:#1f5fc4 !important;
+  border:1px solid #b9cbed !important;
+  box-shadow:none !important;
+}

@@ -30,3 +30,7 @@ Os textos secundários deixaram de usar vermelho. No tema claro usam cinza azula
 
 ## V23 — textos secundários brancos
 No tema cinza escuro, todos os textos secundários agora ficam brancos. No tema claro, os textos secundários permanecem em cinza neutro para manter legibilidade. Vermelho fica restrito a ações de exclusão/perigo.
+
+
+## V24 — favicon reforçado
+Adicionadas referências explícitas para favicon.ico, favicon.png, favicon.svg, apple-touch-icon e site.webmanifest, todas com versão ?v=24 para contornar cache do navegador. O título da aba permanece 'Evangelização Infanto Juvenil – Gestão e Coordenação'.

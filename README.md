@@ -52,3 +52,7 @@ Remove as faixas brancas de ações secundárias. Botões como Alterar, Responde
 
 ## V9 — identidade visual
 Nome atualizado para Evangelização Infanto Juvenil · Gestão e Coordenação, com nova marca visual no menu e favicon próprio para a aba do navegador.
+
+
+## V10 — tema escuro preto
+O tema escuro foi alterado para preto profundo, mantendo textos brancos e contraste alto em cartões, formulários, notificações e botões.

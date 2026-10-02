@@ -532,3 +532,258 @@ html.dark{
   .brand-logo{width:44px;height:44px;min-width:44px}
   .brand-title{font-size:20px!important}
 }
+
+
+/* V10 — tema escuro preto profundo */
+html.dark {
+  --bg-main: #05070a;
+  --bg-panel: #0b0f14;
+  --bg-panel-soft: #11161d;
+  --text-main: #ffffff;
+  --text-soft: #b7c0cc;
+  --line-main: #252b33;
+  --action-bg: #111827;
+  --action-border: #3b4655;
+  --action-text: #ffffff;
+  --danger-bg: #2a0f10;
+  --danger-border: #7f2e34;
+  --danger-text: #ffffff;
+  --ghost-bg: transparent;
+  --ghost-hover: #151a21;
+  --notice-bg: #080b0f;
+  --notice-read: #9aa5b3;
+}
+
+html.dark,
+html.dark body,
+html.dark #root,
+html.dark main {
+  background: #05070a !important;
+  color: #ffffff !important;
+}
+
+html.dark .side {
+  background: #080b0f !important;
+  color: #ffffff !important;
+  border-color: #242a31 !important;
+}
+
+html.dark header {
+  background: #080b0f !important;
+  color: #ffffff !important;
+  border-color: #242a31 !important;
+}
+
+html.dark .content {
+  color: #ffffff !important;
+}
+
+html.dark .card,
+html.dark .panel,
+html.dark .person,
+html.dark .celeb,
+html.dark .chart-card,
+html.dark .modal-card,
+html.dark .notice-panel,
+html.dark .login-card {
+  background: #0b0f14 !important;
+  color: #ffffff !important;
+  border-color: #272d35 !important;
+}
+
+html.dark .hero {
+  background: linear-gradient(110deg, #0d1f3f, #163d7a) !important;
+  color: #ffffff !important;
+}
+
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark h5,
+html.dark b,
+html.dark strong,
+html.dark label,
+html.dark p,
+html.dark span,
+html.dark .row,
+html.dark .att,
+html.dark .history,
+html.dark .meeting-card {
+  color: #ffffff;
+}
+
+html.dark small,
+html.dark .title p,
+html.dark .person small,
+html.dark .row small,
+html.dark .clock span,
+html.dark .empty,
+html.dark .schedule-row small,
+html.dark .meeting-card small,
+html.dark .notice-item small {
+  color: #b7c0cc !important;
+}
+
+html.dark .nav {
+  color: #ffffff !important;
+}
+
+html.dark .nav.active {
+  background: #111827 !important;
+  color: #ffffff !important;
+}
+
+html.dark .brand-title,
+html.dark .brand-copy > span {
+  color: #ffffff !important;
+}
+
+html.dark .form input,
+html.dark .form select,
+html.dark .controls input,
+html.dark .controls select,
+html.dark .modal-card input,
+html.dark .modal-card select,
+html.dark textarea {
+  background: #090d12 !important;
+  color: #ffffff !important;
+  border-color: #3a424c !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #8e99a8 !important;
+}
+
+html.dark select option {
+  background: #0b0f14 !important;
+  color: #ffffff !important;
+}
+
+html.dark .top-icon-btn,
+html.dark .ghost-btn,
+html.dark .icon-close,
+html.dark .edit-schedule,
+html.dark .notice-action,
+html.dark .celeb button,
+html.dark .months button,
+html.dark .link-btn,
+html.dark .edit-icon {
+  background: transparent !important;
+  color: #ffffff !important;
+  border: 1px solid #3a424c !important;
+}
+
+html.dark .top-icon-btn:hover,
+html.dark .ghost-btn:hover,
+html.dark .icon-close:hover,
+html.dark .edit-schedule:hover,
+html.dark .notice-action:hover,
+html.dark .celeb button:hover,
+html.dark .months button:hover,
+html.dark .link-btn:hover,
+html.dark .edit-icon:hover {
+  background: #151a21 !important;
+}
+
+html.dark .danger-icon {
+  background: #2a0f10 !important;
+  color: #ffffff !important;
+  border-color: #7f2e34 !important;
+}
+
+html.dark .primary,
+html.dark .months .active {
+  background: #1f5ed8 !important;
+  color: #ffffff !important;
+  border-color: #1f5ed8 !important;
+}
+
+html.dark .notice-panel {
+  background: #080b0f !important;
+  color: #ffffff !important;
+  border-color: #2a3038 !important;
+}
+
+html.dark .notice-head,
+html.dark .notice-item,
+html.dark .notice-item-head {
+  color: #ffffff !important;
+}
+
+html.dark .notice-head .read-all {
+  background: transparent !important;
+  color: #ffffff !important;
+  border: 1px solid #3a424c !important;
+}
+
+html.dark .notice-head .read-all:hover {
+  background: #151a21 !important;
+}
+
+html.dark .notice-item {
+  border-color: #252b33 !important;
+}
+
+html.dark .notice-item.read {
+  opacity: 1 !important;
+}
+
+html.dark .notice-item.read b,
+html.dark .notice-item.read span,
+html.dark .notice-item.read small {
+  color: #a6b0bd !important;
+}
+
+html.dark footer {
+  color: #b7c0cc !important;
+  border-color: #242a31 !important;
+}
+
+html.dark .bar-track,
+html.dark .rank-track {
+  background: #141a22 !important;
+}
+
+html.dark .donut > div {
+  background: #0b0f14 !important;
+  color: #ffffff !important;
+}
+
+html.dark .annual-summary {
+  background: #0c1420 !important;
+  border-color: #26384d !important;
+  color: #ffffff !important;
+}
+
+html.dark .rsvp-box {
+  background: #0b0f14 !important;
+  border-color: #2b323b !important;
+}
+
+html.dark .yes-rsvp {
+  background: #0e2418 !important;
+  color: #b9f5cf !important;
+  border-color: #2f6f52 !important;
+}
+
+html.dark .no-rsvp {
+  background: #2a1112 !important;
+  color: #ffb9b3 !important;
+  border-color: #87484d !important;
+}
+
+html.dark .schedule-row,
+html.dark .row,
+html.dark .att,
+html.dark .meeting-card,
+html.dark .history {
+  border-color: #2a3038 !important;
+}
+
+html.dark input[type="date"],
+html.dark input[type="time"],
+html.dark select {
+  color-scheme: dark;
+}

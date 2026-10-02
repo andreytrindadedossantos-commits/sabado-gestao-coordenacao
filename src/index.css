@@ -842,3 +842,267 @@ html.dark .delete-notifications-btn:hover{background:#3a1517!important}
   color:#e05454!important;
 }
 html.dark .delete-notifications-btn{color:#fff!important;border-color:#3a424c!important}
+
+/* V13 — remove faixa branca no cabeçalho das notificações */
+.notice-head .read-all,
+.notice-head .delete-notifications-btn,
+.notice-head .icon-close,
+.notice-head .notice-delete {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.notice-head .read-all {
+  color: var(--text-main) !important;
+  border: 0 !important;
+  padding: 4px 6px !important;
+}
+
+.notice-head .delete-notifications-btn {
+  color: var(--text-main) !important;
+  border: 0 !important;
+  padding: 4px 6px !important;
+}
+
+.notice-head .icon-close {
+  color: var(--text-main) !important;
+  border: 0 !important;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+}
+
+.notice-head .read-all:hover,
+.notice-head .delete-notifications-btn:hover,
+.notice-head .icon-close:hover {
+  background: transparent !important;
+  background-color: transparent !important;
+  filter: none !important;
+  text-decoration: none !important;
+  opacity: .9;
+}
+
+html.dark .notice-head .read-all,
+html.dark .notice-head .delete-notifications-btn,
+html.dark .notice-head .icon-close {
+  color: #ffffff !important;
+}
+
+/* V14 — botões sem fundo branco + espaçamento uniforme em todo o sistema */
+:root{
+  --btn-text:#142033;
+  --btn-bg:transparent;
+  --btn-hover:rgba(20,32,51,.07);
+  --btn-border:#8ea0b7;
+  --btn-primary:#2f6ee6;
+  --btn-primary-hover:#285fca;
+  --btn-danger:#d53b32;
+  --btn-danger-bg:rgba(213,59,50,.06);
+}
+html.dark{
+  --btn-text:#ffffff;
+  --btn-bg:transparent;
+  --btn-hover:#151a21;
+  --btn-border:#4b5664;
+  --btn-primary:#2f6ee6;
+  --btn-primary-hover:#3d7bf0;
+  --btn-danger:#ff655d;
+  --btn-danger-bg:rgba(255,101,93,.08);
+}
+
+/* Base comum: evita estilos brancos do navegador e padroniza respiro */
+button{
+  font:inherit;
+  cursor:pointer;
+  line-height:1.15;
+}
+
+/* Botões de ação secundária */
+.edit-schedule,
+.edit-icon,
+.notice-action,
+.celeb button,
+.link-btn,
+.ghost-btn,
+.months button,
+.notice-head .read-all,
+.notice-head .delete-notifications-btn {
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;
+  min-height:40px!important;
+  padding:9px 14px!important;
+  margin:0!important;
+  border-radius:9px!important;
+  background:var(--btn-bg)!important;
+  background-color:var(--btn-bg)!important;
+  color:var(--btn-text)!important;
+  border:1px solid var(--btn-border)!important;
+  box-shadow:none!important;
+  outline:none!important;
+  opacity:1!important;
+  white-space:nowrap;
+  text-decoration:none!important;
+}
+
+.edit-schedule:hover,
+.edit-icon:hover,
+.notice-action:hover,
+.celeb button:hover,
+.link-btn:hover,
+.ghost-btn:hover,
+.months button:hover,
+.notice-head .read-all:hover,
+.notice-head .delete-notifications-btn:hover {
+  background:var(--btn-hover)!important;
+  background-color:var(--btn-hover)!important;
+  color:var(--btn-text)!important;
+  filter:none!important;
+  text-decoration:none!important;
+}
+
+/* Ações principais */
+.primary,
+.pdf-button,
+.compact-action {
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  min-height:42px!important;
+  padding:10px 16px!important;
+  margin:0!important;
+  border-radius:9px!important;
+  background:var(--btn-primary)!important;
+  color:#ffffff!important;
+  border:1px solid var(--btn-primary)!important;
+  box-shadow:none!important;
+  text-decoration:none!important;
+}
+.primary:hover,.pdf-button:hover,.compact-action:hover{
+  background:var(--btn-primary-hover)!important;
+  border-color:var(--btn-primary-hover)!important;
+  filter:none!important;
+}
+
+/* Excluir */
+.danger-icon,
+.notice-delete {
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;
+  min-height:40px!important;
+  padding:9px 12px!important;
+  margin:0!important;
+  border-radius:9px!important;
+  background:var(--btn-danger-bg)!important;
+  color:var(--btn-danger)!important;
+  border:1px solid var(--btn-danger)!important;
+  box-shadow:none!important;
+}
+.danger-icon:hover,.notice-delete:hover{
+  background:var(--btn-danger-bg)!important;
+  filter:brightness(1.08)!important;
+}
+
+/* Ícones quadrados: fechar, tema, notificações e menu */
+.top-icon-btn,
+.icon-close,
+.modal-title button,
+.close,
+.hamb {
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  display:inline-grid!important;
+  place-items:center!important;
+  width:40px!important;
+  min-width:40px!important;
+  height:40px!important;
+  min-height:40px!important;
+  padding:0!important;
+  margin:0!important;
+  border-radius:9px!important;
+  background:transparent!important;
+  color:var(--btn-text)!important;
+  border:1px solid var(--btn-border)!important;
+  box-shadow:none!important;
+}
+.top-icon-btn:hover,.icon-close:hover,.modal-title button:hover,.close:hover,.hamb:hover{
+  background:var(--btn-hover)!important;
+  color:var(--btn-text)!important;
+}
+
+/* Botões Sim / Não */
+.att button,
+.rsvp-buttons button {
+  min-height:40px!important;
+  padding:9px 15px!important;
+  margin:0!important;
+  border-radius:9px!important;
+}
+
+/* Espaçamento padrão entre grupos de botões */
+.top,
+.record-actions,
+.meeting-actions,
+.event-actions,
+.schedule-actions,
+.notice-tools,
+.admin-links,
+.rsvp-buttons {
+  gap:10px!important;
+}
+
+/* Datas comemorativas */
+.celeb{
+  gap:14px!important;
+}
+.celeb button{
+  margin-left:auto!important;
+  min-width:112px!important;
+}
+
+/* Notificações: cabeçalho acompanha o tema, sem faixa branca */
+.notice-head,
+.notice-tools{
+  background:transparent!important;
+  background-color:transparent!important;
+}
+.notice-head .read-all,
+.notice-head .delete-notifications-btn{
+  min-height:32px!important;
+  padding:6px 9px!important;
+  border-color:var(--btn-border)!important;
+}
+.notice-head .icon-close{
+  width:32px!important;
+  min-width:32px!important;
+  height:32px!important;
+  min-height:32px!important;
+  border-color:var(--btn-border)!important;
+}
+
+/* Botão ativo de meses/anos continua destacado */
+.months .active{
+  background:var(--btn-primary)!important;
+  color:#ffffff!important;
+  border-color:var(--btn-primary)!important;
+}
+
+/* Evita botões colados em telas menores */
+@media(max-width:700px){
+  .section-head{gap:14px!important}
+  .record-actions,.meeting-actions,.event-actions,.schedule-actions,.notice-tools,.admin-links{gap:8px!important}
+  .celeb{align-items:center!important}
+  .celeb button{min-width:108px!important;padding:9px 12px!important}
+  .notice-head .read-all,.notice-head .delete-notifications-btn{white-space:normal!important}
+}

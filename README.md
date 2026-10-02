@@ -64,3 +64,11 @@ Adicionado botão visível **Excluir notificações** na central de notificaçõ
 
 ## V12 — notificações para todos os professores
 O botão Excluir notificações e a lixeira individual aparecem para todos. A exclusão é individual no navegador de cada professor, evitando que um professor apague a notificação dos demais.
+
+
+## V13 — correção do cabeçalho das notificações
+Removida a faixa branca no topo do painel de notificações, mantendo o fundo na cor do tema e o texto legível em branco no tema escuro.
+
+
+## V14 — botões e espaçamento
+Todos os botões foram padronizados para não receber fundo branco do navegador. Botões secundários acompanham o tema, ações principais continuam azuis, exclusão fica destacada em vermelho e o espaçamento entre ações foi uniformizado.

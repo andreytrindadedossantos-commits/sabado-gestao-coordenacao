@@ -29,3 +29,53 @@ button{color:inherit}
 .dark .att button{color:#edf2f7}
 @media(max-width:1024px){.dashboard-charts{grid-template-columns:1fr}.chart-wide{grid-column:auto}.group-chart{flex-direction:column;gap:16px}}
 @media(max-width:700px){.pdf-button{width:100%!important;min-height:44px!important}.bar-chart{min-width:430px}.chart-card{overflow-x:auto}}
+
+/* Correção de contraste dos botões nas Datas Comemorativas */
+.celeb button,
+.event-actions .edit-icon,
+.event-actions .danger-icon {
+  opacity: 1 !important;
+  font-weight: 700;
+}
+
+.celeb button {
+  background: #eef4ff !important;
+  color: #1f5fc4 !important;
+  border: 1px solid #9db8ea !important;
+}
+
+.dark .celeb button {
+  background: #25406a !important;
+  color: #ffffff !important;
+  border-color: #5f82bd !important;
+}
+
+.event-actions .edit-icon {
+  background: #eaf2ff !important;
+  color: #1454b8 !important;
+  border-color: #9db8ea !important;
+}
+
+.dark .event-actions .edit-icon {
+  background: #25406a !important;
+  color: #ffffff !important;
+  border-color: #5f82bd !important;
+}
+
+.event-actions .danger-icon {
+  background: #fff0f0 !important;
+  color: #b42318 !important;
+  border-color: #e8a7a7 !important;
+}
+
+.dark .event-actions .danger-icon {
+  background: #5a2525 !important;
+  color: #ffffff !important;
+  border-color: #b86d6d !important;
+}
+
+.celeb button:hover,
+.event-actions .edit-icon:hover,
+.event-actions .danger-icon:hover {
+  filter: brightness(1.05);
+}

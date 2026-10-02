@@ -32,5 +32,7 @@ No primeiro acesso, use a opção de criar acesso/senha.
 ## Observação
 Esta versão usa Supabase diretamente para banco de dados e autenticação administrativa.
 Notificações internas são suportadas. Push notifications do AppDeploy não são transportadas automaticamente para Vercel.
-Deploy Vercel
-Atualização para iniciar deploy
+
+
+## Atualização visual e funcional
+Esta versão restaura o painel com gráficos, formulários de alunos/mães/reuniões, alteração de escalas, controles de calendário e datas comemorativas, mantendo o Supabase como banco.

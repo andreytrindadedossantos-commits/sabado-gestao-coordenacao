@@ -91,3 +91,19 @@ drop policy if exists sabado_rsp_insert on public.sabado_meeting_responses;
 create policy sabado_rsp_insert on public.sabado_meeting_responses for insert to anon,authenticated with check(true);
 drop policy if exists sabado_rsp_update on public.sabado_meeting_responses;
 create policy sabado_rsp_update on public.sabado_meeting_responses for update to anon,authenticated using(true) with check(true);
+
+
+-- Operações compartilhadas, equivalentes à versão anterior do aplicativo:
+do $$
+declare t text;
+begin
+  foreach t in array array['sabado_students','sabado_mothers','sabado_schedules','sabado_attendance','sabado_events','sabado_meetings']
+  loop
+    execute format('drop policy if exists sabado_public_write on public.%I', t);
+    execute format('create policy sabado_public_write on public.%I for all to anon, authenticated using (true) with check (true)', t);
+  end loop;
+end $$;
+
+drop policy if exists sabado_public_notifications_insert on public.sabado_notifications;
+create policy sabado_public_notifications_insert on public.sabado_notifications
+for insert to anon, authenticated with check (true);

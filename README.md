@@ -56,3 +56,11 @@ Nome atualizado para Evangelização Infanto Juvenil · Gestão e Coordenação,
 
 ## V10 — tema escuro preto
 O tema escuro foi alterado para preto profundo, mantendo textos brancos e contraste alto em cartões, formulários, notificações e botões.
+
+
+## V11 — notificações
+Adicionado botão visível **Excluir notificações** na central de notificações para o administrador, mantendo também exclusão individual por notificação.
+
+
+## V12 — notificações para todos os professores
+O botão Excluir notificações e a lixeira individual aparecem para todos. A exclusão é individual no navegador de cada professor, evitando que um professor apague a notificação dos demais.

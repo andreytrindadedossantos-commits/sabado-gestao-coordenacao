@@ -787,3 +787,58 @@ html.dark input[type="time"],
 html.dark select {
   color-scheme: dark;
 }
+
+
+/* V11 — botão Excluir notificações */
+.delete-notifications-btn{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:6px!important;
+  width:auto!important;
+  min-width:0!important;
+  height:auto!important;
+  padding:8px 10px!important;
+  border-radius:9px!important;
+  border:1px solid #e2a4a4!important;
+  background:#fff1f1!important;
+  color:#b42318!important;
+  font-size:12px!important;
+  font-weight:700!important;
+  cursor:pointer!important;
+  box-shadow:none!important;
+  white-space:nowrap;
+}
+.delete-notifications-btn:hover{background:#ffe6e6!important}
+html.dark .delete-notifications-btn{
+  background:#2a0f10!important;
+  color:#ffffff!important;
+  border-color:#7f2e34!important;
+}
+html.dark .delete-notifications-btn:hover{background:#3a1517!important}
+@media(max-width:700px){.delete-notifications-btn{white-space:normal!important}}
+
+/* V12 — exclusão de notificações disponível para todos os professores.
+   A remoção é individual por navegador/usuário e não apaga o aviso dos demais. */
+.delete-notifications-btn{
+  appearance:none;
+  -webkit-appearance:none;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-height:34px;
+  padding:7px 10px;
+  border-radius:9px;
+  cursor:pointer;
+  background:transparent!important;
+  color:var(--text-main)!important;
+  border:1px solid var(--line-main)!important;
+}
+.delete-notifications-btn:hover{background:var(--ghost-hover)!important}
+.notice-delete{
+  flex:0 0 auto;
+  color:#e05454!important;
+}
+html.dark .delete-notifications-btn{color:#fff!important;border-color:#3a424c!important}

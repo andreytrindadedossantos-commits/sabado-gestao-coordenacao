@@ -56,7 +56,8 @@ async function loadAll():Promise<Data>{
 
 function App(){
   const [data,setData]=useState<Data>(empty),[loading,setLoading]=useState(true),[page,setPage]=useState('home'),[menu,setMenu]=useState(false),[dark,setDark]=useState(()=>{const saved=localStorage.getItem('theme');if(saved==='dark')return true;if(saved==='light')return false;return typeof window!=='undefined'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches}),[msg,setMsg]=useState(''),[now,setNow]=useState(new Date()),[admin,setAdmin]=useState(false),[noticeOpen,setNoticeOpen]=useState(false),[meetingNotice,setMeetingNotice]=useState<Meeting|null>(null),[rsvpUserId,setRsvpUserId]=useState('');
-  const [read,setRead]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem('readNotices')||'[]')}catch{return[]}});
+  const [read,setRead]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem('readNotices')||'[]')}catch{return[]}}),
+        [hiddenNotices,setHiddenNotices]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem('hiddenNotices')||'[]')}catch{return[]}});
   const reload=async()=>{try{setData(await loadAll())}catch(e:any){setMsg(e.message||'Erro ao carregar dados.')}finally{setLoading(false)}};
   useEffect(()=>{reload();supabase.auth.getUser().then(({data})=>setAdmin(data.user?.email?.toLowerCase()===ADMIN_EMAIL));const t=setInterval(()=>setNow(new Date()),1000);return()=>clearInterval(t)},[]);
   useEffect(()=>{
@@ -77,27 +78,26 @@ function App(){
 
   const nav=[['Painel','home',Users],['Alunos','students',Users],['Mães','mothers',Heart],['Escalas','schedules',BookOpen],['Reuniões','meetings',CalendarDays],['Chamada','attendance',ClipboardCheck],['Histórico de Aulas','history',History],['Professores','users',UserCog],['Aniversariantes do Mês','birthdays',Cake],['Calendário','calendar',CalendarDays],['Datas Comemorativas','celebrations',PartyPopper]] as const;
   const extra=admin?[['Configurações','settings',Settings],['Administração','admin',UserCog]] as const:[];
-  const unread=data.notifications.filter(n=>!read.includes(n.id)).length;
+  const visibleNotifications=data.notifications.filter(n=>!hiddenNotices.includes(n.id));
+  const unread=visibleNotifications.filter(n=>!read.includes(n.id)).length;
   const toast=(s:string)=>setMsg(s);
   const enableDeviceNotifications=async()=>{
     if(!('Notification' in window))return toast('Este navegador não oferece notificações do dispositivo.');
     const permission=await Notification.requestPermission();
     toast(permission==='granted'?'Notificações do dispositivo ativadas.':'Permissão de notificações não concedida.');
   };
-  const deleteNotice=async(id:string)=>{
-    if(!admin)return toast('Somente o administrador pode excluir notificações.');
-    const{error}=await supabase.from('sabado_notifications').delete().eq('id',id);
-    if(error)return toast(error.message);
-    setData(prev=>({...prev,notifications:prev.notifications.filter(n=>n.id!==id)}));
-    toast('Notificação excluída.');
+  const deleteNotice=(id:string)=>{
+    const next=[...new Set([...hiddenNotices,id])];
+    setHiddenNotices(next);
+    localStorage.setItem('hiddenNotices',JSON.stringify(next));
+    toast('Notificação removida para este usuário.');
   };
-  const clearNotices=async()=>{
-    if(!admin||!confirm('Excluir todas as notificações?'))return;
-    const ids=data.notifications.map(n=>n.id);
-    if(ids.length){const{error}=await supabase.from('sabado_notifications').delete().in('id',ids);if(error)return toast(error.message)}
-    setData(prev=>({...prev,notifications:[]}));
-    setRead([]);localStorage.setItem('readNotices','[]');
-    toast('Notificações excluídas.');
+  const clearNotices=()=>{
+    if(!visibleNotifications.length||!confirm('Remover todas as notificações da sua tela?'))return;
+    const next=[...new Set([...hiddenNotices,...visibleNotifications.map(n=>n.id)])];
+    setHiddenNotices(next);
+    localStorage.setItem('hiddenNotices',JSON.stringify(next));
+    toast('Notificações removidas para este usuário.');
   };
 
   const respond=async(status:'yes'|'no')=>{
@@ -113,7 +113,7 @@ function App(){
   const content=page==='home'?<Dashboard data={data}/>:page==='students'?<Students data={data} admin={admin} reload={reload} toast={toast}/>:page==='mothers'?<Mothers data={data} admin={admin} reload={reload} toast={toast}/>:page==='schedules'?<Schedules data={data} admin={admin} reload={reload} toast={toast}/>:page==='meetings'?<Meetings data={data} admin={admin} reload={reload} toast={toast} setMeeting={setMeetingNotice}/>:page==='attendance'?<AttendancePage data={data} admin={admin} reload={reload} toast={toast}/>:page==='history'?<HistoryPage data={data} admin={admin} reload={reload} toast={toast}/>:page==='birthdays'?<Birthdays data={data}/>:page==='calendar'?<Calendar data={data} admin={admin} reload={reload} toast={toast}/>:page==='celebrations'?<Celebrations data={data} admin={admin} reload={reload} toast={toast}/>:page==='users'?<UsersPage data={data} admin={admin} reload={reload} toast={toast}/>:page==='settings'&&admin?<SettingsPage data={data} reload={reload} toast={toast}/>:page==='admin'&&admin?<AdminPage data={data} setPage={setPage}/>:<Dashboard data={data}/>;
 
   return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><div className="brand-logo"><BookOpen size={26}/><span className="brand-heart">♥</span></div><div className="brand-copy"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}</aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><button className="top-icon-btn" title={dark?'Ativar tema claro':'Ativar tema escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button>{admin&&<button className="ghost-btn" onClick={async()=>{await supabase.auth.signOut();setAdmin(false);setPage('home')}}>Sair</button>}</div></header>
-  {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações</b><div className="notice-tools"><button className="read-all" onClick={()=>{const ids=data.notifications.map(n=>n.id);setRead(ids);localStorage.setItem('readNotices',JSON.stringify(ids))}}>✓ Marcar todas como lidas</button><button className="read-all" onClick={enableDeviceNotifications}>🔔 Ativar no dispositivo</button>{admin&&data.notifications.length>0&&<button className="read-all danger-text" onClick={clearNotices}>Excluir todas</button>}<button className="icon-close" onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div></div>{data.notifications.map(n=><div className={read.includes(n.id)?'notice-item read':'notice-item'} key={n.id}><div className="notice-item-head"><b>{n.title}</b>{admin&&<button className="notice-delete" title="Excluir notificação" onClick={()=>deleteNotice(n.id)}><Trash2 size={15}/></button>}</div><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}</div>)}{!data.notifications.length&&<Empty text="Nenhuma notificação ainda."/>}</div>}
+  {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações</b><div className="notice-tools"><button className="read-all" onClick={()=>{const ids=visibleNotifications.map(n=>n.id);const next=[...new Set([...read,...ids])];setRead(next);localStorage.setItem('readNotices',JSON.stringify(next))}}>✓ Marcar todas como lidas</button><button className="read-all" onClick={enableDeviceNotifications}>🔔 Ativar no dispositivo</button>{visibleNotifications.length>0&&<button className="delete-notifications-btn" onClick={clearNotices}><Trash2 size={15}/> Excluir notificações</button>}<button className="icon-close" onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div></div>{visibleNotifications.map(n=><div className={read.includes(n.id)?'notice-item read':'notice-item'} key={n.id}><div className="notice-item-head"><b>{n.title}</b><button className="notice-delete" title="Excluir esta notificação" onClick={()=>deleteNotice(n.id)}><Trash2 size={15}/></button></div><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}</div>)}{!visibleNotifications.length&&<Empty text="Nenhuma notificação ainda."/>}</div>}
   {meetingNotice&&<Modal title="Confirmar participação" close={()=>setMeetingNotice(null)}><label>Seu nome</label><select value={rsvpUserId} onChange={e=>setRsvpUserId(e.target.value)}><option value="">Selecione seu nome</option>{data.users.filter(u=>['Professor','Administrador'].includes(u.role)&&u.status!=='Inativo').sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(u=><option value={u.id} key={u.id}>{u.name}</option>)}</select><div className="rsvp-buttons"><button className="yes-rsvp" disabled={!rsvpUserId} onClick={()=>respond('yes')}>✅ Vou participar</button><button className="no-rsvp" disabled={!rsvpUserId} onClick={()=>respond('no')}>❌ Não poderei participar</button></div></Modal>}
   {msg&&<div className="toast">{msg}</div>}<section className="content">{content}</section><footer>© 2026 Evangelização Infanto Juvenil · Todos os direitos reservados.</footer></main></div>
 }

@@ -1106,3 +1106,461 @@ button{
   .celeb button{min-width:108px!important;padding:9px 12px!important}
   .notice-head .read-all,.notice-head .delete-notifications-btn{white-space:normal!important}
 }
+
+
+/* V15 — espaçamento tipográfico uniforme em todas as telas */
+.content,
+.panel,
+.card,
+.person,
+.celeb,
+.meeting-card,
+.history,
+.notice-item,
+.modal-card {
+  line-height: 1.45;
+}
+
+.title,
+.section-head,
+.chart-title,
+.meeting-main,
+.history-head {
+  gap: 14px !important;
+}
+
+.title h1,
+.title h2,
+.title h3,
+.panel h2,
+.panel h3 {
+  margin-bottom: 8px;
+}
+
+.person > div:nth-child(2),
+.row > div:first-child,
+.meeting-main > div:first-child,
+.att-student,
+.history-head > button > div,
+.notice-item {
+  gap: 6px !important;
+}
+
+.identity-line,
+.schedule-field,
+.meta-line {
+  display: flex !important;
+  align-items: baseline !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  min-width: 0;
+}
+
+.identity-line b,
+.schedule-field b {
+  white-space: normal;
+}
+
+.identity-line small,
+.schedule-field .field-label {
+  color: var(--text-soft) !important;
+}
+
+.text-separator {
+  display: inline-block;
+  flex: 0 0 auto;
+  margin: 0 2px;
+  color: var(--text-soft) !important;
+  font-weight: 400 !important;
+}
+
+.att-student {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+}
+
+.att-student .identity-line {
+  font-size: 15px;
+}
+
+.att-student .identity-line b {
+  font-size: 16px;
+}
+
+.att-student .identity-line small {
+  font-size: 13px;
+}
+
+.presence-count {
+  margin-top: 2px;
+}
+
+/* Escalas com rótulo - valor bem separados */
+.schedule-row {
+  grid-template-columns: 112px 1.15fr 1fr 1.2fr minmax(300px, 2fr) !important;
+  column-gap: 24px !important;
+  row-gap: 12px !important;
+  padding: 20px 4px !important;
+}
+
+.schedule-row > div {
+  min-width: 0;
+}
+
+.schedule-field {
+  align-content: flex-start;
+}
+
+.schedule-field .field-label {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.schedule-field b {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.schedule-topic {
+  line-height: 1.35;
+}
+
+/* Cartões de alunos, mães e professores */
+.person {
+  column-gap: 14px !important;
+}
+
+.person b {
+  margin-right: 4px;
+}
+
+.person small {
+  line-height: 1.55 !important;
+}
+
+/* Linhas do calendário, datas comemorativas, histórico e eventos */
+.row {
+  gap: 20px !important;
+}
+
+.row > div:first-child {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.event-actions {
+  gap: 10px !important;
+}
+
+/* Formulários: mais respiro entre campos e textos */
+.form,
+.controls,
+.data-form {
+  gap: 14px !important;
+}
+
+.form input,
+.form select,
+.controls input,
+.controls select,
+.modal-card input,
+.modal-card select {
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+}
+
+.checkline {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* Botões: ícone e texto nunca colados */
+button {
+  letter-spacing: 0;
+}
+
+button > svg {
+  flex: 0 0 auto;
+}
+
+/* Menu */
+.nav {
+  gap: 11px !important;
+}
+
+/* Notificações */
+.notice-item-head {
+  gap: 12px !important;
+}
+
+.notice-item span,
+.notice-item small {
+  line-height: 1.45 !important;
+}
+
+/* Responsividade sem juntar palavras */
+@media(max-width:1200px){
+  .schedule-row{
+    grid-template-columns: 110px 1fr 1fr !important;
+  }
+  .schedule-row .schedule-topic{
+    grid-column: 2 / -1;
+  }
+}
+
+@media(max-width:760px){
+  .identity-line,
+  .schedule-field,
+  .meta-line {
+    gap: 6px !important;
+  }
+
+  .schedule-row{
+    grid-template-columns: 1fr !important;
+    column-gap: 0 !important;
+  }
+
+  .schedule-row .schedule-topic{
+    grid-column: auto;
+  }
+
+  .row{
+    gap: 12px !important;
+  }
+}
+
+
+/* V16 — somente tema claro; botão de alternância removido */
+:root,
+html,
+html.dark {
+  --bg-main:#f4f7fb !important;
+  --bg-panel:#ffffff !important;
+  --bg-panel-soft:#eef4fb !important;
+  --text-main:#142033 !important;
+  --text-soft:#58708f !important;
+  --line-main:#d7e2ef !important;
+  --action-bg:#eef4ff !important;
+  --action-border:#c5d7f3 !important;
+  --action-text:#1f5fc4 !important;
+  --danger-bg:#fff3f2 !important;
+  --danger-border:#f2c3bf !important;
+  --danger-text:#c73b32 !important;
+  --ghost-bg:rgba(20,32,51,.04) !important;
+  --ghost-hover:rgba(20,32,51,.09) !important;
+  --notice-bg:#ffffff !important;
+  --notice-read:#6d8098 !important;
+}
+
+html,
+html.dark,
+html body,
+html.dark body,
+html #root,
+html.dark #root,
+html main,
+html.dark main {
+  background:#f4f7fb !important;
+  color:#142033 !important;
+}
+
+html .side,
+html.dark .side,
+html header,
+html.dark header {
+  background:#ffffff !important;
+  color:#142033 !important;
+  border-color:#d7e2ef !important;
+}
+
+html .card,
+html.dark .card,
+html .panel,
+html.dark .panel,
+html .person,
+html.dark .person,
+html .celeb,
+html.dark .celeb,
+html .chart-card,
+html.dark .chart-card,
+html .modal-card,
+html.dark .modal-card,
+html .notice-panel,
+html.dark .notice-panel,
+html .login-card,
+html.dark .login-card {
+  background:#ffffff !important;
+  color:#142033 !important;
+  border-color:#d7e2ef !important;
+}
+
+html h1,
+html.dark h1,
+html h2,
+html.dark h2,
+html h3,
+html.dark h3,
+html h4,
+html.dark h4,
+html b,
+html.dark b,
+html strong,
+html.dark strong,
+html label,
+html.dark label,
+html p,
+html.dark p,
+html span,
+html.dark span {
+  color:inherit;
+}
+
+html small,
+html.dark small,
+html .title p,
+html.dark .title p,
+html .person small,
+html.dark .person small,
+html .row small,
+html.dark .row small,
+html .clock span,
+html.dark .clock span,
+html .empty,
+html.dark .empty,
+html .schedule-row small,
+html.dark .schedule-row small,
+html .meeting-card small,
+html.dark .meeting-card small,
+html .notice-item small,
+html.dark .notice-item small {
+  color:#58708f !important;
+}
+
+html .nav,
+html.dark .nav {
+  color:#142033 !important;
+}
+
+html .nav.active,
+html.dark .nav.active {
+  background:#e7effd !important;
+  color:#1f5fc4 !important;
+}
+
+html .brand-title,
+html.dark .brand-title {
+  color:#2f6ee6 !important;
+}
+
+html .brand-copy > span,
+html.dark .brand-copy > span {
+  color:#58708f !important;
+}
+
+html .form input,
+html.dark .form input,
+html .form select,
+html.dark .form select,
+html .controls input,
+html.dark .controls input,
+html .controls select,
+html.dark .controls select,
+html .modal-card input,
+html.dark .modal-card input,
+html .modal-card select,
+html.dark .modal-card select,
+html textarea,
+html.dark textarea {
+  background:#ffffff !important;
+  color:#142033 !important;
+  border-color:#c8d5e5 !important;
+  color-scheme:light !important;
+}
+
+html input::placeholder,
+html.dark input::placeholder,
+html textarea::placeholder,
+html.dark textarea::placeholder {
+  color:#7b8ea8 !important;
+}
+
+html select option,
+html.dark select option {
+  background:#ffffff !important;
+  color:#142033 !important;
+}
+
+html input[type="date"],
+html.dark input[type="date"],
+html input[type="time"],
+html.dark input[type="time"],
+html select,
+html.dark select {
+  color-scheme:light !important;
+}
+
+html input[type="date"]::-webkit-calendar-picker-indicator,
+html.dark input[type="date"]::-webkit-calendar-picker-indicator,
+html input[type="time"]::-webkit-calendar-picker-indicator,
+html.dark input[type="time"]::-webkit-calendar-picker-indicator {
+  filter:none !important;
+}
+
+html .top-icon-btn,
+html.dark .top-icon-btn,
+html .ghost-btn,
+html.dark .ghost-btn,
+html .icon-close,
+html.dark .icon-close,
+html .edit-schedule,
+html.dark .edit-schedule,
+html .notice-action,
+html.dark .notice-action,
+html .celeb button,
+html.dark .celeb button,
+html .months button,
+html.dark .months button,
+html .link-btn,
+html.dark .link-btn,
+html .edit-icon,
+html.dark .edit-icon {
+  background:transparent !important;
+  color:#142033 !important;
+  border-color:#c8d5e5 !important;
+}
+
+html .danger-icon,
+html.dark .danger-icon {
+  background:#fff3f2 !important;
+  color:#c73b32 !important;
+  border-color:#f2c3bf !important;
+}
+
+html .notice-head .read-all,
+html.dark .notice-head .read-all,
+html .notice-head .delete-notifications-btn,
+html.dark .notice-head .delete-notifications-btn,
+html .notice-head .icon-close,
+html.dark .notice-head .icon-close {
+  background:transparent !important;
+  color:#142033 !important;
+  border-color:#c8d5e5 !important;
+}
+
+html .notice-item.read b,
+html.dark .notice-item.read b,
+html .notice-item.read span,
+html.dark .notice-item.read span,
+html .notice-item.read small,
+html.dark .notice-item.read small {
+  color:#6d8098 !important;
+}
+
+/* O botão de tema não existe mais; esta regra cobre versões em cache. */
+.top .theme-toggle,
+button[title="Ativar tema claro"],
+button[title="Ativar tema escuro"] {
+  display:none !important;
+}

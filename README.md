@@ -34,3 +34,7 @@ No tema cinza escuro, todos os textos secundários agora ficam brancos. No tema 
 
 ## V24 — favicon reforçado
 Adicionadas referências explícitas para favicon.ico, favicon.png, favicon.svg, apple-touch-icon e site.webmanifest, todas com versão ?v=24 para contornar cache do navegador. O título da aba permanece 'Evangelização Infanto Juvenil – Gestão e Coordenação'.
+
+
+## V25 — Escalas corrigidas novamente
+Reforçado o layout da tela Escalas: formulário fechado por padrão, botão Adicionar escala no topo, espaçamento entre rótulo, hífen e valor, botão Alterar sem faixa branca e melhor adaptação no celular. O favicon e os temas das versões anteriores foram preservados.

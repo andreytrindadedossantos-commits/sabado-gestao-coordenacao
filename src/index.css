@@ -399,3 +399,86 @@ html.dark .notice-delete,
 html.dark .red {
   color:#ffffff !important;
 }
+
+
+/* V25 — correção visual reforçada da tela Escalas */
+.schedule-add-form{
+  margin-top:14px!important;
+}
+.schedule-form-head{
+  grid-column:1/-1;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:2px;
+}
+.schedule-form-head h3{
+  margin:0!important;
+}
+.schedule-form-close{
+  flex:0 0 auto;
+}
+
+.schedule-panel{
+  overflow:hidden;
+}
+.schedule-row{
+  background:transparent!important;
+}
+.schedule-field{
+  display:flex!important;
+  align-items:baseline!important;
+  flex-wrap:wrap!important;
+  gap:8px!important;
+  min-width:0!important;
+}
+.schedule-field .field-label{
+  display:inline-block!important;
+  margin:0!important;
+  white-space:nowrap!important;
+}
+.schedule-field .text-separator{
+  display:inline-block!important;
+  margin:0 1px!important;
+  font-weight:600!important;
+}
+.schedule-field b{
+  display:inline!important;
+  margin:0!important;
+}
+.edit-schedule{
+  background:transparent!important;
+  color:#1f5fc4!important;
+  border:1px solid #9fb9de!important;
+  opacity:1!important;
+  filter:none!important;
+}
+.edit-schedule:disabled{
+  opacity:.55!important;
+}
+html.dark .edit-schedule{
+  background:#343b45!important;
+  color:#ffffff!important;
+  border-color:#697585!important;
+  opacity:1!important;
+  filter:none!important;
+}
+html.dark .schedule-field .field-label,
+html.dark .schedule-field .text-separator,
+html.dark .schedule-field b,
+html.dark .schedule-date b,
+html.dark .schedule-date small{
+  color:#ffffff!important;
+}
+
+@media (max-width: 760px){
+  .schedule-form-head{grid-column:auto}
+  .schedule-row{
+    grid-template-columns:1fr!important;
+    gap:10px!important;
+  }
+  .schedule-actions{
+    margin-top:8px!important;
+  }
+}

@@ -107,3 +107,32 @@ end $$;
 drop policy if exists sabado_public_notifications_insert on public.sabado_notifications;
 create policy sabado_public_notifications_insert on public.sabado_notifications
 for insert to anon, authenticated with check (true);
+
+
+-- Restaurar cadastro/listagem de professores e nomes para RSVP:
+insert into public.sabado_users (name,email,phone,role,group_name,status)
+select distinct t.name, '', '', 'Professor', 'Geral', 'Ativo'
+from (
+  select adolescent_teacher as name from public.sabado_schedules
+  union
+  select younger_teacher as name from public.sabado_schedules
+) t
+where coalesce(trim(t.name),'') <> ''
+  and upper(trim(t.name)) <> 'TODOS'
+  and not exists (select 1 from public.sabado_users u where lower(trim(u.name))=lower(trim(t.name)));
+
+drop policy if exists sabado_professors_public_insert on public.sabado_users;
+create policy sabado_professors_public_insert on public.sabado_users
+for insert to anon, authenticated
+with check(role='Professor' and lower(coalesce(email,''))<>'andreytrindadedossantos@gmail.com');
+
+drop policy if exists sabado_professors_public_update on public.sabado_users;
+create policy sabado_professors_public_update on public.sabado_users
+for update to anon, authenticated
+using(role='Professor')
+with check(role='Professor' and lower(coalesce(email,''))<>'andreytrindadedossantos@gmail.com');
+
+drop policy if exists sabado_professors_public_delete on public.sabado_users;
+create policy sabado_professors_public_delete on public.sabado_users
+for delete to anon, authenticated
+using(role='Professor' and lower(coalesce(email,''))<>'andreytrindadedossantos@gmail.com');

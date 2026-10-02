@@ -36,3 +36,7 @@ Notificações internas são suportadas. Push notifications do AppDeploy não s�
 
 ## Atualização visual e funcional
 Esta versão restaura o painel com gráficos, formulários de alunos/mães/reuniões, alteração de escalas, controles de calendário e datas comemorativas, mantendo o Supabase como banco.
+
+
+## V5
+Layout ajustado para corresponder às telas de referência fornecidas: painel, alunos, mães, escalas, reuniões, chamada, histórico, aniversariantes, calendário, datas comemorativas e notificações.

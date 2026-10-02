@@ -44,3 +44,11 @@ Layout ajustado para corresponder às telas de referência fornecidas: painel, a
 
 ## V6 — notificações
 Inclui notificações em tempo real no sistema, notificações do navegador quando o site estiver aberto e a permissão estiver concedida, avisos automáticos para reuniões, comemorações, alterações de escala e lembretes agendados no Supabase Cron.
+
+
+## V8
+Remove as faixas brancas de ações secundárias. Botões como Alterar, Responder, Marcar todas como lidas e Fechar ficam sem fundo, apenas com texto/ícone, usando branco no tema claro e preto no tema escuro conforme solicitado.
+
+
+## V9 — identidade visual
+Nome atualizado para Evangelização Infanto Juvenil · Gestão e Coordenação, com nova marca visual no menu e favicon próprio para a aba do navegador.

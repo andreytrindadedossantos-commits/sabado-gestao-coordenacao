@@ -381,3 +381,154 @@ html.dark .outline-danger{background:transparent!important;color:#fff!important}
   .notice-tools{justify-content:flex-start!important}
   .notice-head .read-all{white-space:normal;font-size:11px!important}
 }
+
+
+/* V8 — remover faixas brancas dos botões e adaptar texto por tema */
+:root{
+  --text-button-only:#ffffff;
+}
+html.dark{
+  --text-button-only:#000000;
+}
+
+/* Ações que devem aparecer somente como texto/ícone, sem caixa branca */
+.edit-schedule,
+.edit-icon,
+.notice-action,
+.notice-head .read-all,
+.icon-close,
+.modal-title button,
+.close,
+.hamb,
+.top-icon-btn,
+.ghost-btn,
+.celeb button,
+.link-btn {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: var(--text-button-only) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  opacity: 1 !important;
+}
+
+.edit-schedule:hover,
+.edit-icon:hover,
+.notice-action:hover,
+.notice-head .read-all:hover,
+.icon-close:hover,
+.modal-title button:hover,
+.close:hover,
+.hamb:hover,
+.top-icon-btn:hover,
+.ghost-btn:hover,
+.celeb button:hover,
+.link-btn:hover {
+  background: transparent !important;
+  background-color: transparent !important;
+  filter: none !important;
+  text-decoration: underline;
+}
+
+/* Mantém excluir destacado, mas nunca branco */
+.danger-icon,
+.notice-delete {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #ef4444 !important;
+  border: 1px solid currentColor !important;
+  box-shadow: none !important;
+}
+
+/* Botões principais continuam azuis */
+.primary,
+.pdf-button,
+.compact-action,
+.months .active {
+  color: #ffffff !important;
+}
+
+/* Notificações: sem barras brancas */
+.notice-panel,
+.notice-head,
+.notice-tools,
+.notice-item,
+.notice-item-head {
+  background-color: transparent !important;
+}
+.notice-panel {
+  background: var(--notice-bg) !important;
+}
+.notice-head .read-all {
+  padding: 4px 6px !important;
+  min-height: auto !important;
+}
+.notice-head .icon-close {
+  width: 30px !important;
+  height: 30px !important;
+}
+
+/* Em campos e seletores, mantém contraste correto independentemente do tema */
+.form input,.form select,.controls input,.controls select,.modal-card input,.modal-card select {
+  background: transparent !important;
+  color: var(--text-main) !important;
+}
+
+/* V9 — identidade visual Evangelização Infanto Juvenil */
+.brand{
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  gap:12px!important;
+  padding:10px 10px 25px!important;
+}
+.brand-logo{
+  position:relative;
+  width:48px;
+  height:48px;
+  min-width:48px;
+  border-radius:14px;
+  display:grid;
+  place-items:center;
+  background:linear-gradient(135deg,#2f6ee6,#5c93ff);
+  color:#fff;
+  box-shadow:0 8px 20px rgba(47,110,230,.28);
+}
+.brand-logo svg{stroke-width:2}
+.brand-heart{
+  position:absolute;
+  right:5px;
+  bottom:2px;
+  font-size:14px;
+  line-height:1;
+  color:#fff;
+  text-shadow:0 1px 2px rgba(0,0,0,.25);
+}
+.brand-copy{
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+  gap:1px;
+}
+.brand-title{
+  display:flex;
+  flex-direction:column;
+  color:#2f6ee6!important;
+  font-size:22px!important;
+  line-height:1.18!important;
+  font-weight:800!important;
+  letter-spacing:-.2px;
+}
+.brand-copy>span{
+  color:var(--text-soft)!important;
+  font-size:13px!important;
+  line-height:1.25;
+}
+@media(max-width:1024px){
+  .brand{padding-top:8px!important}
+}
+@media(max-width:700px){
+  .brand-logo{width:44px;height:44px;min-width:44px}
+  .brand-title{font-size:20px!important}
+}

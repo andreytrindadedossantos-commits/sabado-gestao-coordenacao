@@ -55,11 +55,21 @@ async function loadAll():Promise<Data>{
 }
 
 function App(){
-  const [data,setData]=useState<Data>(empty),[loading,setLoading]=useState(true),[page,setPage]=useState('home'),[menu,setMenu]=useState(false),[dark,setDark]=useState(localStorage.getItem('theme')==='dark'),[msg,setMsg]=useState(''),[now,setNow]=useState(new Date()),[admin,setAdmin]=useState(false),[noticeOpen,setNoticeOpen]=useState(false),[meetingNotice,setMeetingNotice]=useState<Meeting|null>(null),[rsvpUserId,setRsvpUserId]=useState('');
+  const [data,setData]=useState<Data>(empty),[loading,setLoading]=useState(true),[page,setPage]=useState('home'),[menu,setMenu]=useState(false),[dark,setDark]=useState(()=>{const saved=localStorage.getItem('theme');if(saved==='dark')return true;if(saved==='light')return false;return typeof window!=='undefined'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches}),[msg,setMsg]=useState(''),[now,setNow]=useState(new Date()),[admin,setAdmin]=useState(false),[noticeOpen,setNoticeOpen]=useState(false),[meetingNotice,setMeetingNotice]=useState<Meeting|null>(null),[rsvpUserId,setRsvpUserId]=useState('');
   const [read,setRead]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem('readNotices')||'[]')}catch{return[]}});
   const reload=async()=>{try{setData(await loadAll())}catch(e:any){setMsg(e.message||'Erro ao carregar dados.')}finally{setLoading(false)}};
   useEffect(()=>{reload();supabase.auth.getUser().then(({data})=>setAdmin(data.user?.email?.toLowerCase()===ADMIN_EMAIL));const t=setInterval(()=>setNow(new Date()),1000);return()=>clearInterval(t)},[]);
-  useEffect(()=>{document.documentElement.classList.toggle('dark',dark);localStorage.setItem('theme',dark?'dark':'light')},[dark]);
+  useEffect(()=>{
+    const channel=supabase.channel('sabado-notifications-live').on('postgres_changes',{event:'INSERT',schema:'public',table:'sabado_notifications'},payload=>{
+      const n=payload.new as any;
+      setData(prev=>({...prev,notifications:[{id:n.id,title:n.title,body:n.body,date:n.date,kind:n.kind,meetingId:n.meeting_id||undefined},...prev.notifications.filter(x=>x.id!==n.id)]}));
+      if('Notification' in window && Notification.permission==='granted'){
+        try{new Notification(n.title,{body:n.body})}catch{}
+      }
+    }).subscribe();
+    return()=>{supabase.removeChannel(channel)}
+  },[]);
+  useEffect(()=>{document.documentElement.classList.toggle('dark',dark);document.documentElement.setAttribute('data-theme',dark?'dark':'light');localStorage.setItem('theme',dark?'dark':'light')},[dark]);
   useEffect(()=>{if(!msg)return;const t=setTimeout(()=>setMsg(''),2500);return()=>clearTimeout(t)},[msg]);
 
   if(window.location.pathname==='/admin'&&!admin)return <AdminLogin onSuccess={()=>{setAdmin(true);window.history.replaceState({},'', '/');reload()}}/>;
@@ -69,6 +79,26 @@ function App(){
   const extra=admin?[['Configurações','settings',Settings],['Administração','admin',UserCog]] as const:[];
   const unread=data.notifications.filter(n=>!read.includes(n.id)).length;
   const toast=(s:string)=>setMsg(s);
+  const enableDeviceNotifications=async()=>{
+    if(!('Notification' in window))return toast('Este navegador não oferece notificações do dispositivo.');
+    const permission=await Notification.requestPermission();
+    toast(permission==='granted'?'Notificações do dispositivo ativadas.':'Permissão de notificações não concedida.');
+  };
+  const deleteNotice=async(id:string)=>{
+    if(!admin)return toast('Somente o administrador pode excluir notificações.');
+    const{error}=await supabase.from('sabado_notifications').delete().eq('id',id);
+    if(error)return toast(error.message);
+    setData(prev=>({...prev,notifications:prev.notifications.filter(n=>n.id!==id)}));
+    toast('Notificação excluída.');
+  };
+  const clearNotices=async()=>{
+    if(!admin||!confirm('Excluir todas as notificações?'))return;
+    const ids=data.notifications.map(n=>n.id);
+    if(ids.length){const{error}=await supabase.from('sabado_notifications').delete().in('id',ids);if(error)return toast(error.message)}
+    setData(prev=>({...prev,notifications:[]}));
+    setRead([]);localStorage.setItem('readNotices','[]');
+    toast('Notificações excluídas.');
+  };
 
   const respond=async(status:'yes'|'no')=>{
     if(!meetingNotice||!rsvpUserId)return toast('Selecione seu nome.');
@@ -82,8 +112,8 @@ function App(){
 
   const content=page==='home'?<Dashboard data={data}/>:page==='students'?<Students data={data} admin={admin} reload={reload} toast={toast}/>:page==='mothers'?<Mothers data={data} admin={admin} reload={reload} toast={toast}/>:page==='schedules'?<Schedules data={data} admin={admin} reload={reload} toast={toast}/>:page==='meetings'?<Meetings data={data} admin={admin} reload={reload} toast={toast} setMeeting={setMeetingNotice}/>:page==='attendance'?<AttendancePage data={data} admin={admin} reload={reload} toast={toast}/>:page==='history'?<HistoryPage data={data} admin={admin} reload={reload} toast={toast}/>:page==='birthdays'?<Birthdays data={data}/>:page==='calendar'?<Calendar data={data} admin={admin} reload={reload} toast={toast}/>:page==='celebrations'?<Celebrations data={data} admin={admin} reload={reload} toast={toast}/>:page==='users'?<UsersPage data={data} admin={admin} reload={reload} toast={toast}/>:page==='settings'&&admin?<SettingsPage data={data} reload={reload} toast={toast}/>:page==='admin'&&admin?<AdminPage data={data} setPage={setPage}/>:<Dashboard data={data}/>;
 
-  return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}</aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><button onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button>{admin&&<button onClick={async()=>{await supabase.auth.signOut();setAdmin(false);setPage('home')}}>Sair</button>}</div></header>
-  {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações</b><button onClick={()=>{const ids=data.notifications.map(n=>n.id);setRead(ids);localStorage.setItem('readNotices',JSON.stringify(ids))}}>✓ Marcar todas como lidas</button><button onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div>{data.notifications.map(n=><div className={read.includes(n.id)?'notice-item read':'notice-item'} key={n.id}><b>{n.title}</b><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}</div>)}</div>}
+  return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}</aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><button className="top-icon-btn" title={dark?'Ativar tema claro':'Ativar tema escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button>{admin&&<button className="ghost-btn" onClick={async()=>{await supabase.auth.signOut();setAdmin(false);setPage('home')}}>Sair</button>}</div></header>
+  {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações</b><div className="notice-tools"><button className="read-all" onClick={()=>{const ids=data.notifications.map(n=>n.id);setRead(ids);localStorage.setItem('readNotices',JSON.stringify(ids))}}>✓ Marcar todas como lidas</button><button className="read-all" onClick={enableDeviceNotifications}>🔔 Ativar no dispositivo</button>{admin&&data.notifications.length>0&&<button className="read-all danger-text" onClick={clearNotices}>Excluir todas</button>}<button className="icon-close" onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div></div>{data.notifications.map(n=><div className={read.includes(n.id)?'notice-item read':'notice-item'} key={n.id}><div className="notice-item-head"><b>{n.title}</b>{admin&&<button className="notice-delete" title="Excluir notificação" onClick={()=>deleteNotice(n.id)}><Trash2 size={15}/></button>}</div><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}</div>)}{!data.notifications.length&&<Empty text="Nenhuma notificação ainda."/>}</div>}
   {meetingNotice&&<Modal title="Confirmar participação" close={()=>setMeetingNotice(null)}><label>Seu nome</label><select value={rsvpUserId} onChange={e=>setRsvpUserId(e.target.value)}><option value="">Selecione seu nome</option>{data.users.filter(u=>['Professor','Administrador'].includes(u.role)&&u.status!=='Inativo').sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(u=><option value={u.id} key={u.id}>{u.name}</option>)}</select><div className="rsvp-buttons"><button className="yes-rsvp" disabled={!rsvpUserId} onClick={()=>respond('yes')}>✅ Vou participar</button><button className="no-rsvp" disabled={!rsvpUserId} onClick={()=>respond('no')}>❌ Não poderei participar</button></div></Modal>}
   {msg&&<div className="toast">{msg}</div>}<section className="content">{content}</section><footer>© 2026 Evangelização Infanto Juvenil · Todos os direitos reservados.</footer></main></div>
 }
@@ -161,7 +191,7 @@ function Schedules({data,reload,toast}:{data:Data;admin:boolean;reload:()=>Promi
 
 function Meetings({data,reload,toast,setMeeting}:{data:Data;admin:boolean;reload:()=>Promise<void>;toast:(s:string)=>void;setMeeting:(m:Meeting)=>void}){
   const blank={title:'',date:'',time:'',location:'',notes:''};const[f,setF]=useState(blank),[edit,setEdit]=useState<Meeting|null>(null);
-  const save=async()=>{if(!f.title||!f.date)return toast('Informe título e data.');const{data:r,error}=await supabase.from('sabado_meetings').insert({...f,time:f.time||null}).select().single();if(error)return toast(error.message);await supabase.from('sabado_notifications').insert({title:'📅 Nova reunião marcada',body:`${f.title} em ${fmt(f.date)} ${f.time||''}`,kind:'meeting',meeting_id:r.id,notice_key:'meeting-'+r.id});setF(blank);await reload();toast('Reunião marcada.')};
+  const save=async()=>{if(!f.title||!f.date)return toast('Informe título e data.');const{error}=await supabase.from('sabado_meetings').insert({...f,time:f.time||null});if(error)return toast(error.message);setF(blank);await reload();toast('Reunião marcada.')};
   const update=async()=>{if(!edit)return;const{error}=await supabase.from('sabado_meetings').update({title:edit.title,date:edit.date,time:edit.time||null,location:edit.location,notes:edit.notes,updated_at:new Date().toISOString()}).eq('id',edit.id);if(error)return toast(error.message);await supabase.from('sabado_meeting_responses').delete().eq('meeting_id',edit.id);setEdit(null);await reload();toast('Reunião reagendada.')};
   const del=async(m:Meeting)=>{if(!confirm('Excluir reunião "'+m.title+'"?'))return;const{error}=await supabase.from('sabado_meetings').delete().eq('id',m.id);if(error)return toast(error.message);await reload();toast('Reunião excluída.')};
   return <><Title t="Reuniões" s="Marque reuniões, acompanhe confirmações e avise todos os professores pelo sistema."/><div className="panel form data-form"><h3><CalendarDays size={18}/> Nova reunião</h3><input placeholder="Título da reunião *" value={f.title} onChange={e=>setF({...f,title:e.target.value})}/><input type="date" value={f.date} onChange={e=>setF({...f,date:e.target.value})}/><input type="time" value={f.time} onChange={e=>setF({...f,time:e.target.value})}/><input placeholder="Local" value={f.location} onChange={e=>setF({...f,location:e.target.value})}/><input placeholder="Observações / pauta" value={f.notes} onChange={e=>setF({...f,notes:e.target.value})}/><button className="primary" onClick={save}><Bell size={17}/> Marcar e notificar professores</button></div>

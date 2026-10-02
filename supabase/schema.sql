@@ -136,3 +136,35 @@ drop policy if exists sabado_professors_public_delete on public.sabado_users;
 create policy sabado_professors_public_delete on public.sabado_users
 for delete to anon, authenticated
 using(role='Professor' and lower(coalesce(email,''))<>'andreytrindadedossantos@gmail.com');
+
+
+-- V6: notificações automáticas e lembretes
+create extension if not exists pg_cron with schema pg_catalog;
+
+create unique index if not exists sabado_notifications_notice_key_uidx
+on public.sabado_notifications(notice_key)
+where notice_key <> '';
+
+create or replace function public.sabado_notice_once(
+  p_title text, p_body text, p_kind text, p_key text, p_meeting_id uuid default null
+) returns void language plpgsql security definer set search_path=public as $$
+begin
+  insert into public.sabado_notifications(title,body,kind,notice_key,meeting_id,date)
+  values(p_title,p_body,p_kind,p_key,p_meeting_id,now())
+  on conflict (notice_key) where notice_key <> '' do nothing;
+end $$;
+
+create or replace function public.sabado_generate_reminders()
+returns void language plpgsql security definer set search_path=public as $$
+declare r record;
+begin
+  for r in select * from public.sabado_events where type='Festa' loop
+    if r.date=current_date+7 then perform public.sabado_notice_once('🎉 Festa em 7 dias: '||r.title,to_char(r.date,'DD/MM/YYYY'),'celebration','celebration-7d-'||r.id,null); end if;
+    if r.date=current_date+1 then perform public.sabado_notice_once('🎉 Festa amanhã: '||r.title,to_char(r.date,'DD/MM/YYYY'),'celebration','celebration-1d-'||r.id,null); end if;
+    if r.date=current_date then perform public.sabado_notice_once('🎉 Festa hoje: '||r.title,to_char(r.date,'DD/MM/YYYY'),'celebration','celebration-today-'||r.id,null); end if;
+  end loop;
+  for r in select * from public.sabado_meetings loop
+    if r.date=current_date+1 then perform public.sabado_notice_once('📅 Reunião amanhã: '||r.title,to_char(r.date,'DD/MM/YYYY'),'meeting','meeting-1d-'||r.id,r.id); end if;
+    if r.date=current_date then perform public.sabado_notice_once('📅 Reunião hoje: '||r.title,to_char(r.date,'DD/MM/YYYY'),'meeting','meeting-today-'||r.id,r.id); end if;
+  end loop;
+end $$;

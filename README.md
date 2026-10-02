@@ -40,3 +40,7 @@ Esta versão restaura o painel com gráficos, formulários de alunos/mães/reuni
 
 ## V5
 Layout ajustado para corresponder às telas de referência fornecidas: painel, alunos, mães, escalas, reuniões, chamada, histórico, aniversariantes, calendário, datas comemorativas e notificações.
+
+
+## V6 — notificações
+Inclui notificações em tempo real no sistema, notificações do navegador quando o site estiver aberto e a permissão estiver concedida, avisos automáticos para reuniões, comemorações, alterações de escala e lembretes agendados no Supabase Cron.

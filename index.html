@@ -3,28 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="only light" />
+  <meta name="color-scheme" content="light dark" />
   <meta name="theme-color" content="#f4f7fb" />
   <title>Evangelização Infanto Juvenil – Gestão e Coordenação</title>
   <link rel="icon" type="image/png" href="/favicon.png" />
   <link rel="shortcut icon" href="/favicon.ico" />
 
-  <style>
-    :root, html, body, #root {
-      color-scheme: only light !important;
-      background: #f4f7fb !important;
-      color: #142033 !important;
-    }
-  </style>
+  
+
+
   <script>
     try {
-      localStorage.setItem('theme', 'light');
-      document.documentElement.className = document.documentElement.className
-        .split(' ')
-        .filter(function(c){ return c && c !== 'dark'; })
-        .join(' ');
-      document.documentElement.setAttribute('data-theme', 'light');
-      document.documentElement.style.colorScheme = 'only light';
+      var savedTheme = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
+      document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      document.documentElement.style.colorScheme = savedTheme;
     } catch (e) {}
   </script>
 

@@ -1,12 +1,12 @@
 *{box-sizing:border-box}
 :root{
-  color-scheme:only light;
+  color-scheme:light;
   --bg:#f4f7fb;
   --surface:#ffffff;
   --surface-soft:#f8fafc;
   --surface-blue:#eef4ff;
   --text:#142033;
-  --muted:#667a96;
+  --muted:#c62828;
   --border:#d7e2ef;
   --border-strong:#b9c9dc;
   --blue:#2f6ee6;
@@ -20,16 +20,16 @@
   --shadow:0 14px 34px rgba(18,32,51,.12);
 }
 html,body,#root{margin:0;min-height:100%;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
-html,body,#root{color-scheme:only light!important}
+html,body,#root{color-scheme:light}
 body{overflow-x:hidden}
-button,input,select,textarea{font:inherit;color:var(--text);color-scheme:only light!important}
+button,input,select,textarea{font:inherit;color:var(--text);color-scheme:light}
 button{appearance:none;-webkit-appearance:none;cursor:pointer}
 button:disabled{opacity:.55;cursor:not-allowed}
 input,select,textarea{background:#fff;border:1px solid var(--border-strong);border-radius:10px;outline:none}
 input:focus,select:focus,textarea:focus{border-color:#6f9bea;box-shadow:0 0 0 3px rgba(47,110,230,.10)}
 input::placeholder,textarea::placeholder{color:#8393a8}
 select option{background:#fff;color:var(--text)}
-input[type="date"],input[type="time"],select{color-scheme:only light!important}
+input[type="date"],input[type="time"],select{color-scheme:light}
 input[type="date"]::-webkit-calendar-picker-indicator,input[type="time"]::-webkit-calendar-picker-indicator{filter:none!important;opacity:1;cursor:pointer}
 
 .shell{min-height:100vh;background:var(--bg)}
@@ -150,17 +150,37 @@ footer{padding:24px;text-align:center;color:var(--muted);border-top:1px solid va
 }
 
 
-/* V20 — trava definitiva para tema claro */
-html,
-html[data-theme="light"],
+/* V21 — tema claro + tema cinza escuro */
+html.dark{
+  color-scheme:dark;
+  --bg:#20242b;
+  --surface:#2b3139;
+  --surface-soft:#303741;
+  --surface-blue:#303a4a;
+  --text:#ffffff;
+  --muted:#ff5a5f;
+  --border:#444d59;
+  --border-strong:#596473;
+  --blue:#2f6ee6;
+  --blue-hover:#3d7df1;
+  --blue-soft:#293a59;
+  --danger:#ff7b7b;
+  --danger-bg:#412729;
+  --danger-border:#8d494e;
+  --success:#42b875;
+  --success-bg:#243b2e;
+  --shadow:0 14px 34px rgba(0,0,0,.28);
+}
+
 html.dark,
-body,
 html.dark body,
-#root,
-html.dark #root {
-  color-scheme: only light !important;
-  background: #f4f7fb !important;
-  color: #142033 !important;
+html.dark #root,
+html.dark .shell,
+html.dark main,
+html.dark .login-page,
+html.dark .loading{
+  background:var(--bg)!important;
+  color:var(--text)!important;
 }
 
 html.dark .side,
@@ -172,47 +192,178 @@ html.dark .celeb,
 html.dark .chart-card,
 html.dark .modal-card,
 html.dark .notice-panel,
-html.dark .login-card {
-  background: #ffffff !important;
-  color: #142033 !important;
-  border-color: #d7e2ef !important;
+html.dark .login-card{
+  background:var(--surface)!important;
+  color:var(--text)!important;
+  border-color:var(--border)!important;
+}
+
+html.dark .nav{
+  color:var(--text)!important;
+}
+html.dark .nav:hover,
+html.dark .top-icon-btn:hover,
+html.dark .ghost-btn:hover,
+html.dark .hamb:hover,
+html.dark .close:hover,
+html.dark .icon-close:hover{
+  background:#363d47!important;
+}
+html.dark .nav.active{
+  background:#39465a!important;
+  color:#ffffff!important;
+}
+
+html.dark .brand-copy>span,
+html.dark .clock span,
+html.dark .title p,
+html.dark .person small,
+html.dark .row small,
+html.dark .att-student small,
+html.dark .schedule-date small,
+html.dark .field-label,
+html.dark .text-separator,
+html.dark .meeting-main small,
+html.dark .rsvp-box small,
+html.dark .history-head small,
+html.dark .chart-title small,
+html.dark .bar-value,
+html.dark .notice-item small,
+html.dark .empty,
+html.dark footer,
+html.dark .annual-summary span,
+html.dark .celeb small{
+  color:var(--muted)!important;
 }
 
 html.dark input,
 html.dark select,
-html.dark textarea,
-html.dark option {
-  background: #ffffff !important;
-  color: #142033 !important;
-  color-scheme: only light !important;
+html.dark textarea{
+  background:var(--surface-soft)!important;
+  color:var(--text)!important;
+  border-color:var(--border-strong)!important;
+  color-scheme:dark!important;
+}
+html.dark input::placeholder,
+html.dark textarea::placeholder{
+  color:#c4cbd3!important;
+}
+html.dark select option{
+  background:var(--surface-soft)!important;
+  color:var(--text)!important;
+}
+html.dark input[type="date"],
+html.dark input[type="time"],
+html.dark select{
+  color-scheme:dark!important;
+}
+html.dark input[type="date"]::-webkit-calendar-picker-indicator,
+html.dark input[type="time"]::-webkit-calendar-picker-indicator{
+  filter:invert(1) brightness(1.55)!important;
 }
 
-html.dark .nav {
-  color: #142033 !important;
+html.dark .top-icon-btn,
+html.dark .ghost-btn,
+html.dark .hamb,
+html.dark .close,
+html.dark .icon-close{
+  background:#2f353e!important;
+  color:#ffffff!important;
+  border-color:var(--border-strong)!important;
 }
-html.dark .nav.active {
-  background: #e7effd !important;
-  color: #1f5fc4 !important;
-}
-html.dark .primary {
-  background: #2f6ee6 !important;
-  color: #ffffff !important;
-}
+
 html.dark .edit-icon,
 html.dark .edit-schedule,
 html.dark .notice-action,
 html.dark .celeb button,
 html.dark .read-all,
 html.dark .delete-notifications-btn,
-html.dark .link-btn,
-html.dark .icon-close {
-  background: transparent !important;
-  color: #1f5fc4 !important;
-  border-color: #9fb9de !important;
+html.dark .link-btn{
+  background:#343b45!important;
+  color:#ffffff!important;
+  border-color:#697585!important;
 }
+html.dark .edit-icon:hover,
+html.dark .edit-schedule:hover,
+html.dark .notice-action:hover,
+html.dark .celeb button:hover,
+html.dark .read-all:hover,
+html.dark .delete-notifications-btn:hover,
+html.dark .link-btn:hover{
+  background:#404956!important;
+}
+
 html.dark .danger-icon,
-html.dark .notice-delete {
-  background: #fff2f1 !important;
-  color: #c7372f !important;
-  border-color: #efc4c1 !important;
+html.dark .notice-delete{
+  background:var(--danger-bg)!important;
+  color:#ffffff!important;
+  border-color:var(--danger-border)!important;
+}
+
+html.dark .att button,
+html.dark .months button{
+  background:#343b45!important;
+  color:#ffffff!important;
+  border-color:#697585!important;
+}
+html.dark .months .active,
+html.dark .primary{
+  background:var(--blue)!important;
+  color:#ffffff!important;
+  border-color:var(--blue)!important;
+}
+
+html.dark .annual-summary{
+  background:#29313b!important;
+  border-color:#485463!important;
+}
+html.dark .medal-legend span{
+  color:#ffffff!important;
+}
+
+html.dark .bar-track,
+html.dark .rank-track{
+  background:#3a424e!important;
+}
+html.dark .donut>div{
+  background:var(--surface)!important;
+  color:#ffffff!important;
+}
+html.dark .rank-pos{
+  background:#37445a!important;
+  color:#ffffff!important;
+}
+
+html.dark .schedule-row,
+html.dark .meeting-card,
+html.dark .history,
+html.dark .row,
+html.dark .att,
+html.dark .notice-item{
+  border-color:#505966!important;
+}
+
+html.dark .modal-backdrop{
+  background:rgba(0,0,0,.62)!important;
+}
+
+html.dark .yes-rsvp{
+  background:#244535!important;
+  color:#d8ffe8!important;
+  border-color:#4c8e6a!important;
+}
+html.dark .no-rsvp{
+  background:#4a2a2c!important;
+  color:#ffdede!important;
+  border-color:#95565b!important;
+}
+
+html.dark .toast{
+  background:#11151a!important;
+  color:#ffffff!important;
+}
+
+.theme-toggle svg{
+  width:20px;
+  height:20px;
 }

@@ -18,3 +18,7 @@ O CSS foi reconstruído do zero para usar somente tema claro. Foram removidas re
 
 ## V20 — tema claro forçado
 O App.tsx atual não possui tema escuro nem botão de troca de tema. Esta versão força o tema claro também no main.tsx, index.html e CSS, inclusive neutralizando uma classe `dark` antiga que possa permanecer no navegador.
+
+
+## V21 — botão de tema
+Adicionado botão para alternar entre tema claro e tema cinza escuro. O tema fica salvo no navegador. Os textos secundários usam vermelho nos dois temas.

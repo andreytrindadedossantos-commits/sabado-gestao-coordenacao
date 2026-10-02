@@ -22,3 +22,7 @@ O App.tsx atual não possui tema escuro nem botão de troca de tema. Esta versã
 
 ## V21 — botão de tema
 Adicionado botão para alternar entre tema claro e tema cinza escuro. O tema fica salvo no navegador. Os textos secundários usam vermelho nos dois temas.
+
+
+## V22 — textos secundários
+Os textos secundários deixaram de usar vermelho. No tema claro usam cinza azulado #66788F e no tema cinza escuro usam cinza azulado claro #AEB9C7. O vermelho permanece apenas em ações de exclusão/perigo.

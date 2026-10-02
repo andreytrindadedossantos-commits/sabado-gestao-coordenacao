@@ -14,3 +14,7 @@ O tema escuro foi removido do código e do CSS. Não existe mais botão de troca
 
 ## V19 — tema claro definitivo
 O CSS foi reconstruído do zero para usar somente tema claro. Foram removidas regras acumuladas de tema escuro e padronizados todos os botões para evitar faixas brancas e problemas de contraste. O `index.html` também força `color-scheme: light` antes de o React iniciar.
+
+
+## V20 — tema claro forçado
+O App.tsx atual não possui tema escuro nem botão de troca de tema. Esta versão força o tema claro também no main.tsx, index.html e CSS, inclusive neutralizando uma classe `dark` antiga que possa permanecer no navegador.

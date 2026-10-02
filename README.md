@@ -32,3 +32,5 @@ No primeiro acesso, use a opção de criar acesso/senha.
 ## Observação
 Esta versão usa Supabase diretamente para banco de dados e autenticação administrativa.
 Notificações internas são suportadas. Push notifications do AppDeploy não são transportadas automaticamente para Vercel.
+Deploy Vercel
+Atualização para iniciar deploy

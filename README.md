@@ -26,3 +26,7 @@ Adicionado botão para alternar entre tema claro e tema cinza escuro. O tema fic
 
 ## V22 — textos secundários
 Os textos secundários deixaram de usar vermelho. No tema claro usam cinza azulado #66788F e no tema cinza escuro usam cinza azulado claro #AEB9C7. O vermelho permanece apenas em ações de exclusão/perigo.
+
+
+## V23 — textos secundários brancos
+No tema cinza escuro, todos os textos secundários agora ficam brancos. No tema claro, os textos secundários permanecem em cinza neutro para manter legibilidade. Vermelho fica restrito a ações de exclusão/perigo.

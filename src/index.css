@@ -6,7 +6,7 @@
   --surface-soft:#f8fafc;
   --surface-blue:#eef4ff;
   --text:#142033;
-  --muted:#c62828;
+  --muted:#66788f;
   --border:#d7e2ef;
   --border-strong:#b9c9dc;
   --blue:#2f6ee6;
@@ -158,7 +158,7 @@ html.dark{
   --surface-soft:#303741;
   --surface-blue:#303a4a;
   --text:#ffffff;
-  --muted:#ff5a5f;
+  --muted:#ffffff;
   --border:#444d59;
   --border-strong:#596473;
   --blue:#2f6ee6;
@@ -366,4 +366,36 @@ html.dark .toast{
 .theme-toggle svg{
   width:20px;
   height:20px;
+}
+
+
+/* V23 — textos secundários brancos no tema cinza escuro */
+html.dark .brand-copy>span,
+html.dark .clock span,
+html.dark .title p,
+html.dark .person small,
+html.dark .row small,
+html.dark .att-student small,
+html.dark .schedule-date small,
+html.dark .field-label,
+html.dark .text-separator,
+html.dark .meeting-main small,
+html.dark .rsvp-box small,
+html.dark .history-head small,
+html.dark .chart-title small,
+html.dark .bar-value,
+html.dark .notice-item small,
+html.dark .empty,
+html.dark footer,
+html.dark .annual-summary span,
+html.dark .celeb small,
+html.dark .presence-count {
+  color:#ffffff !important;
+}
+
+/* Mantém vermelho apenas para exclusão, ausência e alertas de perigo */
+html.dark .danger-icon,
+html.dark .notice-delete,
+html.dark .red {
+  color:#ffffff !important;
 }

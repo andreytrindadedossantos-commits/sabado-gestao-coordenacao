@@ -70,7 +70,6 @@ function App(){
     }).subscribe();
     return()=>{supabase.removeChannel(channel)}
   },[]);
-  useEffect(()=>{document.documentElement.classList.remove('dark');document.documentElement.setAttribute('data-theme','light');localStorage.setItem('theme','light')},[]);
   useEffect(()=>{if(!msg)return;const t=setTimeout(()=>setMsg(''),2500);return()=>clearTimeout(t)},[msg]);
 
   if(window.location.pathname==='/admin'&&!admin)return <AdminLogin onSuccess={()=>{setAdmin(true);window.history.replaceState({},'', '/');reload()}}/>;

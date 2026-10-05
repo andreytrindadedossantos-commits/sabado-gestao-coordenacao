@@ -924,3 +924,55 @@ html.dark .auto-preview-date small{color:#fff!important}
   .auto-preview-date{grid-row:auto}
   .auto-preview-row .auto-topic{grid-column:auto}
 }
+
+
+/* V42 — botão Gerar automaticamente visível no celular */
+@media(max-width:700px){
+  .schedule-section-head{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    gap:14px!important;
+    width:100%!important;
+    overflow:visible!important;
+  }
+
+  .schedule-section-head > div:first-child{
+    width:100%!important;
+    min-width:0!important;
+  }
+
+  .schedule-top-actions{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    width:100%!important;
+    min-width:0!important;
+    gap:10px!important;
+    position:relative!important;
+    z-index:2!important;
+    overflow:visible!important;
+  }
+
+  .schedule-top-actions button,
+  .schedule-top-actions .compact-action,
+  .auto-generate-btn.compact-action{
+    display:flex!important;
+    width:100%!important;
+    min-width:0!important;
+    min-height:46px!important;
+    justify-content:center!important;
+    align-items:center!important;
+    visibility:visible!important;
+    opacity:1!important;
+    white-space:normal!important;
+    position:relative!important;
+  }
+
+  .auto-generate-btn.compact-action{
+    order:1!important;
+  }
+
+  .schedule-top-actions .primary{
+    order:2!important;
+  }
+}

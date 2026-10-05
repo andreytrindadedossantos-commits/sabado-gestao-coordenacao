@@ -135,3 +135,10 @@ Funcionamento:
 
 As escalas automáticas recebem internamente a identificação:
 `Gerada automaticamente pelo sistema`.
+
+## V42 — botão de escala automática no celular
+
+- O botão **Gerar automaticamente** agora fica sempre visível na tela de Escalas, inclusive no celular.
+- No mobile, os botões ficam um abaixo do outro e ocupam 100% da largura.
+- A geração automática continua protegida para o Super Administrador.
+- Se o celular ainda não estiver autenticado como Super Administrador, tocar em **Gerar automaticamente** direciona para `/admin`.

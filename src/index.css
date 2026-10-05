@@ -675,7 +675,8 @@ html:not(.dark) button.notice-action {
 
 /* V28 — ajuste mobile exclusivo da tela Reuniões
    Evita o seletor nativo de horário do Android, que estava cortando a tela. */
-.meeting-time-input{
+.meeting-time-input,
+.mobile-time-input{
   width:100%;
   max-width:100%;
   min-width:0;

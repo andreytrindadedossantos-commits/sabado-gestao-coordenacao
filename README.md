@@ -54,3 +54,9 @@ Ajustada somente a tela Reuniões no mobile. O campo de horário deixou de usar 
 
 ## V29 — correção de build
 Corrigido um erro da V28: a alteração do campo de horário havia atingido também telas de Calendário e Datas Comemorativas, causando erro de compilação. Agora a mudança para HH:MM fica somente na tela de Reuniões, como solicitado.
+
+
+## V30 — ajuste mobile em Calendário e Datas Comemorativas
+- Removido o seletor nativo de horário também das telas Calendário e Datas Comemorativas no celular.
+- Agora esses campos usam entrada manual no formato HH:MM, evitando o corte na tela de confirmação do Android.
+- Incluída validação de horário nas duas telas.

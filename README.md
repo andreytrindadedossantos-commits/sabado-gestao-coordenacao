@@ -61,52 +61,12 @@ Corrigido um erro da V28: a alteração do campo de horário havia atingido tamb
 - Agora esses campos usam entrada manual no formato HH:MM, evitando o corte na tela de confirmação do Android.
 - Incluída validação de horário nas duas telas.
 
+## V37 — somente navegador
 
-## V31 — PWA instalável no Android e iPhone/iPad
-- Adicionado manifest PWA completo com ícones 192x192, 512x512 e maskable.
-- Adicionado Apple Touch Icon 180x180 e metatags específicas para iOS.
-- Adicionado service worker com estratégia network-first para evitar servir versões antigas quando há internet e permitir abertura básica offline.
-- Adicionado botão “Instalar aplicativo” no cabeçalho.
-- Android/Chrome: usa o prompt nativo quando disponível.
-- iPhone/iPad: mostra instruções para Safari → Compartilhar → Adicionar à Tela de Início.
-- Adicionado suporte a safe areas do iPhone quando executado em modo standalone.
-
-
-## V32 — PWA oficial no dynv6
-- Domínio oficial do aplicativo: https://evangelizacao.dynv6.net
-- PWA configurada para iOS/iPadOS e Android.
-- Manifesto usa o dynv6 como id, start_url e scope.
-- O alias evangelizacao-juvenil.vercel.app redireciona para o domínio oficial.
-- Ícones e service worker receberam versão v32 para evitar cache antigo.
-- No iPhone/iPad: Safari → Compartilhar → Adicionar à Tela de Início.
-- No Android: botão Instalar aplicativo ou menu do Chrome → Instalar app.
-
-## V33 — instalação PWA corrigida
-
-- O evento nativo `beforeinstallprompt` agora é capturado antes do React iniciar, evitando perder o prompt de instalação no Chrome Android.
-- O manifesto passou a usar `id`, `start_url` e `scope` relativos ao domínio.
-- `site.webmanifest` e `sw.js` recebem Content-Type e cache corretos na Vercel.
-- O botão usa ícone de celular em vez de ícone de download.
-- A ajuda do Android avisa para não usar “Fazer download da página”, pois isso não instala a PWA.
-- iPhone/iPad continuam usando Safari → Compartilhar → Adicionar à Tela de Início.
-
-## V34 — instalação PWA Android/iOS
-
-A tela mostrada pelo Chrome com a seta para baixo é a opção de DOWNLOAD DA PÁGINA, não a instalação da PWA.
-Nesta versão:
-- o service worker é registrado antes do React;
-- foi removida a reescrita global do Vercel para não interferir em `sw.js` e `site.webmanifest`;
-- a ajuda orienta a rolar o menu ⋮ do Chrome para baixo até “Instalar app” ou “Adicionar à tela inicial”;
-- o botão do sistema continua tentando abrir o prompt nativo automaticamente quando o Chrome o disponibiliza;
-- iOS continua usando Safari → Compartilhar → Adicionar à Tela de Início.
-
-## V35 — PWA somente online
-
-Esta versão remove o funcionamento offline do service worker.
-- Não salva páginas em cache para uso offline.
-- Não usa fallback de página armazenada.
-- Sempre tenta carregar a versão atual pela internet.
-- Ao ficar sem internet, o aplicativo dependerá da conexão para funcionar e sincronizar com o Supabase.
-
-Importante: se o Chrome já tiver uma página baixada manualmente, ela deve ser removida em Downloads.
-A opção com a seta para baixo do Chrome é “baixar página”, não “instalar aplicativo”.
+PWA removida. O sistema volta a funcionar somente pelo navegador, como antes.
+- Sem botão de instalar aplicativo.
+- Sem service worker.
+- Sem manifesto PWA.
+- Sem funcionamento offline.
+- Mantidos os ajustes mobile de Reuniões, Calendário e Datas Comemorativas.
+- O acesso continua por https://evangelizacao.dynv6.net

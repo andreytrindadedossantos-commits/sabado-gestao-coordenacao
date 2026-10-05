@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Bell, BookOpen, Cake, CalendarDays, ClipboardCheck, Heart, History,
-  Menu, Moon, PartyPopper, Pencil, Plus, Save, Settings, Share2, Smartphone, Sun, Trash2,
+  Menu, Moon, PartyPopper, Pencil, Plus, Save, Settings, Sun, Trash2,
   UserCog, Users, X
 } from 'lucide-react';
 import { supabase } from './supabase';
@@ -56,26 +56,13 @@ async function loadAll():Promise<Data>{
   };
 }
 
-type InstallPromptEvent = Event & {
-  prompt:()=>Promise<void>;
-  userChoice:Promise<{outcome:'accepted'|'dismissed';platform:string}>;
-};
-
 function App(){
-  const [data,setData]=useState<Data>(empty),[loading,setLoading]=useState(true),[page,setPage]=useState('home'),[menu,setMenu]=useState(false),[dark,setDark]=useState(()=>localStorage.getItem('theme')==='dark'),[msg,setMsg]=useState(''),[now,setNow]=useState(new Date()),[admin,setAdmin]=useState(false),[noticeOpen,setNoticeOpen]=useState(false),[meetingNotice,setMeetingNotice]=useState<Meeting|null>(null),[rsvpUserId,setRsvpUserId]=useState(''),[installPrompt,setInstallPrompt]=useState<InstallPromptEvent|null>(null),[installHelp,setInstallHelp]=useState(false),[standalone,setStandalone]=useState(()=>window.matchMedia?.('(display-mode: standalone)').matches||(navigator as any).standalone===true);
+  const [data,setData]=useState<Data>(empty),[loading,setLoading]=useState(true),[page,setPage]=useState('home'),[menu,setMenu]=useState(false),[dark,setDark]=useState(()=>localStorage.getItem('theme')==='dark'),[msg,setMsg]=useState(''),[now,setNow]=useState(new Date()),[admin,setAdmin]=useState(false),[noticeOpen,setNoticeOpen]=useState(false),[meetingNotice,setMeetingNotice]=useState<Meeting|null>(null),[rsvpUserId,setRsvpUserId]=useState('');
   const [read,setRead]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem('readNotices')||'[]')}catch{return[]}}),
         [hiddenNotices,setHiddenNotices]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem('hiddenNotices')||'[]')}catch{return[]}});
   const reload=async()=>{try{setData(await loadAll())}catch(e:any){setMsg(e.message||'Erro ao carregar dados.')}finally{setLoading(false)}};
   useEffect(()=>{reload();supabase.auth.getUser().then(({data})=>setAdmin(data.user?.email?.toLowerCase()===ADMIN_EMAIL));const t=setInterval(()=>setNow(new Date()),1000);return()=>clearInterval(t)},[]);
   useEffect(()=>{document.documentElement.classList.toggle('dark',dark);document.documentElement.setAttribute('data-theme',dark?'dark':'light');document.documentElement.style.colorScheme=dark?'dark':'light';localStorage.setItem('theme',dark?'dark':'light')},[dark]);
-  useEffect(()=>{
-    const syncPrompt=()=>setInstallPrompt(((window as any).__pwaInstallPrompt||null) as InstallPromptEvent|null);
-    const installed=()=>{setStandalone(true);setInstallPrompt(null);setInstallHelp(false);(window as any).__pwaInstallPrompt=null};
-    syncPrompt();
-    window.addEventListener('pwa-install-ready',syncPrompt);
-    window.addEventListener('appinstalled',installed);
-    return()=>{window.removeEventListener('pwa-install-ready',syncPrompt);window.removeEventListener('appinstalled',installed)};
-  },[]);
   useEffect(()=>{
     const channel=supabase.channel('sabado-notifications-live').on('postgres_changes',{event:'INSERT',schema:'public',table:'sabado_notifications'},payload=>{
       const n=payload.new as any;
@@ -100,28 +87,6 @@ function App(){
     if(!('Notification' in window))return toast('Este navegador não oferece notificações do dispositivo.');
     const permission=await Notification.requestPermission();
     toast(permission==='granted'?'Notificações do dispositivo ativadas.':'Permissão de notificações não concedida.');
-  };
-  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-  const installApp=async()=>{
-    if(standalone)return toast('O aplicativo já está instalado neste dispositivo.');
-    const prompt=(installPrompt||(window as any).__pwaInstallPrompt) as InstallPromptEvent|null;
-    if(prompt){
-      try{
-        await prompt.prompt();
-        const choice=await prompt.userChoice;
-        if(choice.outcome==='accepted'){
-          setInstallPrompt(null);
-          (window as any).__pwaInstallPrompt=null;
-          toast('Instalação iniciada.');
-        }else{
-          setInstallHelp(true);
-        }
-      }catch{
-        setInstallHelp(true);
-      }
-      return;
-    }
-    setInstallHelp(true);
   };
   const deleteNotice=(id:string)=>{
     const next=[...new Set([...hiddenNotices,id])];
@@ -149,9 +114,8 @@ function App(){
 
   const content=page==='home'?<Dashboard data={data}/>:page==='students'?<Students data={data} admin={admin} reload={reload} toast={toast}/>:page==='mothers'?<Mothers data={data} admin={admin} reload={reload} toast={toast}/>:page==='schedules'?<Schedules data={data} admin={admin} reload={reload} toast={toast}/>:page==='meetings'?<Meetings data={data} admin={admin} reload={reload} toast={toast} setMeeting={setMeetingNotice}/>:page==='attendance'?<AttendancePage data={data} admin={admin} reload={reload} toast={toast}/>:page==='history'?<HistoryPage data={data} admin={admin} reload={reload} toast={toast}/>:page==='birthdays'?<Birthdays data={data}/>:page==='calendar'?<Calendar data={data} admin={admin} reload={reload} toast={toast}/>:page==='celebrations'?<Celebrations data={data} admin={admin} reload={reload} toast={toast}/>:page==='users'?<UsersPage data={data} admin={admin} reload={reload} toast={toast}/>:page==='settings'&&admin?<SettingsPage data={data} reload={reload} toast={toast}/>:page==='admin'&&admin?<AdminPage data={data} setPage={setPage}/>:<Dashboard data={data}/>;
 
-  return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><div className="brand-logo"><BookOpen size={26}/><span className="brand-heart">♥</span></div><div className="brand-copy"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}</aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top">{!standalone&&<button className="top-icon-btn install-app-btn" title="Instalar aplicativo no celular" onClick={installApp}><Smartphone/></button>}<button className="top-icon-btn theme-toggle" title={dark?'Usar tema claro':'Usar tema cinza escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button>{admin&&<button className="ghost-btn" onClick={async()=>{await supabase.auth.signOut();setAdmin(false);setPage('home')}}>Sair</button>}</div></header>
+  return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><div className="brand-logo"><BookOpen size={26}/><span className="brand-heart">♥</span></div><div className="brand-copy"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}</aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><button className="top-icon-btn theme-toggle" title={dark?'Usar tema claro':'Usar tema cinza escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button>{admin&&<button className="ghost-btn" onClick={async()=>{await supabase.auth.signOut();setAdmin(false);setPage('home')}}>Sair</button>}</div></header>
   {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações</b><div className="notice-tools"><button className="read-all" onClick={()=>{const ids=visibleNotifications.map(n=>n.id);const next=[...new Set([...read,...ids])];setRead(next);localStorage.setItem('readNotices',JSON.stringify(next))}}>✓ Marcar todas como lidas</button><button className="read-all" onClick={enableDeviceNotifications}>🔔 Ativar no dispositivo</button>{visibleNotifications.length>0&&<button className="delete-notifications-btn" onClick={clearNotices}><Trash2 size={15}/> Excluir notificações</button>}<button className="icon-close" onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div></div>{visibleNotifications.map(n=><div className={read.includes(n.id)?'notice-item read':'notice-item'} key={n.id}><div className="notice-item-head"><b>{n.title}</b><button className="notice-delete" title="Excluir esta notificação" onClick={()=>deleteNotice(n.id)}><Trash2 size={15}/></button></div><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}</div>)}{!visibleNotifications.length&&<Empty text="Nenhuma notificação ainda."/>}</div>}
-  {installHelp&&<Modal title="Instalar aplicativo" close={()=>setInstallHelp(false)}><div className="install-help">{isIOS?<><div className="install-app-icon"><img src="/pwa-192.png?v=34" alt="Ícone do aplicativo"/></div><p>No iPhone/iPad, abra <b>https://evangelizacao.dynv6.net</b> no <b>Safari</b>.</p><ol><li>Toque em <b>Compartilhar</b> <Share2 size={18}/>.</li><li>Escolha <b>Adicionar à Tela de Início</b>.</li><li>Toque em <b>Adicionar</b>.</li></ol><p className="install-note">No iPhone a instalação é feita pela Tela de Início; não existe download de arquivo IPA pelo navegador.</p></>:<><div className="install-app-icon"><img src="/pwa-192.png?v=34" alt="Ícone do aplicativo"/></div><p><b>Android / Chrome</b></p><ol><li>Toque nos <b>3 pontinhos (⋮)</b> do Chrome.</li><li><b>Role o menu para baixo</b>. A opção de instalação fica mais abaixo do que aparece na primeira tela.</li><li>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li><li>Confirme em <b>Instalar</b>.</li></ol><p className="install-warning"><b>Não toque na seta de download que fica no topo do menu.</b> Ela mostra “Baixar página novamente?” e apenas salva a página nos Downloads — não instala o aplicativo.</p><p className="install-note">Se “Instalar app” ainda não aparecer, atualize esta página uma vez e abra novamente o menu ⋮.</p></>}</div></Modal>}
   {meetingNotice&&<Modal title="Confirmar participação" close={()=>setMeetingNotice(null)}><label>Seu nome</label><select value={rsvpUserId} onChange={e=>setRsvpUserId(e.target.value)}><option value="">Selecione seu nome</option>{data.users.filter(u=>['Professor','Administrador'].includes(u.role)&&u.status!=='Inativo').sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(u=><option value={u.id} key={u.id}>{u.name}</option>)}</select><div className="rsvp-buttons"><button className="yes-rsvp" disabled={!rsvpUserId} onClick={()=>respond('yes')}>✅ Vou participar</button><button className="no-rsvp" disabled={!rsvpUserId} onClick={()=>respond('no')}>❌ Não poderei participar</button></div></Modal>}
   {msg&&<div className="toast">{msg}</div>}<section className="content">{content}</section><footer>© 2026 Evangelização Infanto Juvenil · Todos os direitos reservados.</footer></main></div>
 }

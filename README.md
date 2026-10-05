@@ -85,3 +85,15 @@ O banco registra automaticamente quando houver:
 Cada registro contém ação, tipo, item, usuário, e-mail, data/hora e os dados antes/depois da alteração.
 
 Observação: como o sistema ainda permite algumas operações sem login individual de professor, essas ações aparecem como **Usuário sem login**. Quando cada professor possuir login próprio, o e-mail/nome autenticado será identificado automaticamente.
+
+## V39 — Super Administrador e Auditoria
+
+Foi liberado um acesso mais direto ao Super Administrador.
+
+- Quando não estiver autenticado, o menu lateral mostra **Acesso Super Administrador**.
+- Ao entrar com o e-mail de Super Administrador, o menu libera **Auditoria**, **Configurações** e **Administração**.
+- Após o login administrativo, o sistema abre diretamente a tela **Auditoria**.
+- A sessão administrativa é acompanhada em tempo real pelo Supabase Auth, sem exigir recarregar a página para liberar o menu.
+
+E-mail de Super Administrador configurado no sistema:
+`andreytrindadedossantos@gmail.com`

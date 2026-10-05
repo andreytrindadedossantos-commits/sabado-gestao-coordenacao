@@ -976,3 +976,70 @@ html.dark .auto-preview-date small{color:#fff!important}
     order:2!important;
   }
 }
+
+
+/* V43 — login individual e permissões */
+.teacher-login{max-width:460px!important}
+.login-brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.login-brand>div:last-child{display:flex;flex-direction:column;gap:2px}
+.login-brand b{font-size:16px}
+.login-brand span{font-size:12px;color:var(--muted)}
+.login-main-button{display:flex!important;align-items:center;justify-content:center;gap:8px}
+.login-message{display:block;margin-top:10px;line-height:1.45}
+.access-blocked{text-align:center}
+.access-blocked>svg{margin:0 auto;color:var(--blue)}
+.access-blocked p{line-height:1.55}
+.user-session-card{
+  margin:14px 12px 0;
+  padding:11px 12px;
+  border-radius:11px;
+  background:var(--surface-soft);
+  border:1px solid var(--border);
+  display:flex;
+  gap:9px;
+  align-items:center;
+}
+.user-session-card>div{display:flex;flex-direction:column;min-width:0}
+.user-session-card b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-session-card small{font-size:11px;color:var(--muted)}
+.logged-response{
+  display:flex;gap:8px;align-items:center;
+  padding:11px 12px;border:1px solid var(--border);
+  border-radius:10px;background:var(--surface-soft);margin-bottom:12px
+}
+.access-instructions{display:flex;gap:12px;align-items:flex-start}
+.access-instructions>div{display:flex;flex-direction:column;gap:5px}
+.access-instructions span{color:var(--muted);line-height:1.5}
+.permission-actions{flex-wrap:wrap}
+.access-status{display:inline-flex;margin-top:5px;width:max-content;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.access-status.ready{background:#eaf8ef;color:#217a43}
+.access-status.missing{background:#fff0ef;color:#b8322b}
+.permission-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.permission-toolbar button{border:1px solid var(--border);background:var(--surface-soft);color:var(--text);padding:8px 10px;border-radius:8px}
+.permission-grid{display:grid;gap:8px;margin-bottom:14px}
+.permission-row{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--surface-soft)
+}
+.permission-row>div{display:flex;gap:12px;flex-wrap:wrap}
+.permission-row label{display:flex;gap:6px;align-items:center;font-size:13px}
+html.dark .access-status.ready{background:#234333;color:#d7ffe6}
+html.dark .access-status.missing{background:#4a2a2c;color:#fff}
+html.dark .login-brand span,
+html.dark .user-session-card small,
+html.dark .access-instructions span{color:#fff!important}
+@media(max-width:700px){
+  .permission-row{align-items:flex-start;flex-direction:column}
+  .permission-row>div{flex-direction:column;gap:7px}
+  .permission-actions{width:100%;justify-content:flex-start}
+}
+
+
+/* V44 — login por usuário + acesso por 30 dias */
+.admin-login-link{margin-top:4px!important}
+.user-create-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+.user-create-form button{grid-column:1/-1}
+@media(max-width:700px){
+  .user-create-form{grid-template-columns:1fr}
+  .teacher-login input{font-size:16px}
+}

@@ -142,3 +142,69 @@ As escalas automáticas recebem internamente a identificação:
 - No mobile, os botões ficam um abaixo do outro e ocupam 100% da largura.
 - A geração automática continua protegida para o Super Administrador.
 - Se o celular ainda não estiver autenticado como Super Administrador, tocar em **Gerar automaticamente** direciona para `/admin`.
+
+## V43 — Login individual dos professores
+
+Novo sistema de acesso:
+
+- Cada professor entra com e-mail e senha próprios.
+- O Super Administrador cadastra o professor com o e-mail correto.
+- No primeiro acesso, o professor toca em **Primeiro acesso**, informa o e-mail cadastrado e cria a própria senha.
+- A conta precisa confirmar o e-mail pelo Supabase.
+- Professor inativo não consegue entrar.
+- Existe recuperação de senha por e-mail.
+- O professor identificado responde reuniões com o próprio nome, sem precisar selecionar manualmente.
+
+### Permissões controladas pelo Super Administrador
+
+Em **Professores e Acessos → Permissões**, é possível liberar ou bloquear:
+- Painel;
+- Alunos (visualizar / alterar);
+- Mães (visualizar / alterar);
+- Escalas (visualizar / alterar);
+- Reuniões (visualizar / alterar);
+- Chamada (visualizar / lançar);
+- Histórico;
+- Professores;
+- Aniversariantes;
+- Calendário (visualizar / alterar);
+- Datas Comemorativas (visualizar / alterar).
+
+A auditoria passa a identificar o professor autenticado pelo e-mail.
+
+### Banco de dados
+
+`supabase/professor_login_migration.sql` é uma migração aditiva segura e pode ser aplicada antes da publicação.
+`supabase/professor_login_rls_after_publish.sql` endurece as políticas de banco e deve ser aplicado somente depois que a V43 estiver publicada, pois passa a exigir login.
+
+
+## V44 — Login por nome de usuário + senha a cada 30 dias
+
+O administrador não precisa mais cadastrar e-mail para cada professor.
+
+Exemplo:
+- Usuário: `Fernanda` → Primeiro acesso → Criar senha.
+- Usuário: `Márcio` → Primeiro acesso → Criar senha.
+
+Depois que a pessoa entra corretamente, o navegador mantém a sessão e o sistema somente volta a solicitar usuário e senha depois de **30 dias** (ou antes se a pessoa tocar em **Sair**, limpar os dados do navegador ou trocar de aparelho).
+
+### Administração
+
+Em **Usuários e Permissões**:
+- cadastro com nome completo;
+- usuário para login;
+- telefone opcional;
+- turma;
+- status;
+- permissões individuais;
+- indicação “Aguardando primeiro acesso” / “Senha criada”;
+- botão **Nova senha**, que apaga a senha anterior e libera a criação de uma nova senha no próximo acesso.
+
+Os usuários antigos recebem automaticamente um login baseado no primeiro nome. Se houver dois primeiros nomes iguais, o segundo recebe um número, e o administrador pode alterar depois.
+
+
+### Como a senha funciona na V44
+
+A senha é armazenada apenas como **hash bcrypt** em uma área privada do banco (`private`), nunca em texto aberto. O primeiro acesso cria uma sessão aleatória válida por **30 dias**. O navegador envia essa sessão ao Supabase em cada requisição, permitindo também identificar o usuário na Auditoria.
+
+O Super Administrador continua usando o acesso administrativo já existente.

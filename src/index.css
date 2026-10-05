@@ -749,3 +749,13 @@ html.dark .install-note{color:#ffffff!important}
   .top-icon-btn{width:44px;height:44px;min-width:44px}
   .install-help{font-size:15px}
 }
+
+.install-warning{
+  margin:0;
+  padding:12px 14px;
+  border-radius:10px;
+  background:rgba(245,158,11,.12);
+  border:1px solid rgba(245,158,11,.35);
+  color:var(--text);
+}
+html.dark .install-warning{color:#fff!important}

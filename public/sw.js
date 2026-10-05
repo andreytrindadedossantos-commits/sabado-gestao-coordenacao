@@ -1,5 +1,5 @@
-const CACHE_NAME='evangelizacao-pwa-v32';
-const APP_SHELL=['/','/index.html','/site.webmanifest?v=32','/pwa-192.png?v=32','/pwa-512.png?v=32','/apple-touch-icon.png?v=32'];
+const CACHE_NAME='evangelizacao-pwa-v33';
+const APP_SHELL=['/','/index.html','/site.webmanifest?v=33','/pwa-192.png?v=33','/pwa-512.png?v=33','/apple-touch-icon.png?v=33'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL)).catch(()=>{}));

@@ -80,3 +80,12 @@ Corrigido um erro da V28: a alteração do campo de horário havia atingido tamb
 - Ícones e service worker receberam versão v32 para evitar cache antigo.
 - No iPhone/iPad: Safari → Compartilhar → Adicionar à Tela de Início.
 - No Android: botão Instalar aplicativo ou menu do Chrome → Instalar app.
+
+## V33 — instalação PWA corrigida
+
+- O evento nativo `beforeinstallprompt` agora é capturado antes do React iniciar, evitando perder o prompt de instalação no Chrome Android.
+- O manifesto passou a usar `id`, `start_url` e `scope` relativos ao domínio.
+- `site.webmanifest` e `sw.js` recebem Content-Type e cache corretos na Vercel.
+- O botão usa ícone de celular em vez de ícone de download.
+- A ajuda do Android avisa para não usar “Fazer download da página”, pois isso não instala a PWA.
+- iPhone/iPad continuam usando Safari → Compartilhar → Adicionar à Tela de Início.

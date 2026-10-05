@@ -112,3 +112,26 @@ Em Authentication → URL Configuration, configure:
 
 Se o Site URL continuar como `http://localhost:3000`, e-mails antigos podem continuar redirecionando para localhost.
 Depois de alterar, gere/reenvie um NOVO e-mail de confirmação.
+
+## V41 — Escalas automáticas
+
+A tela **Escalas** agora possui o botão **Gerar automaticamente**, disponível para o Super Administrador.
+
+Funcionamento:
+- escolhe o mês;
+- encontra todos os sábados do mês;
+- ignora sábados que já possuem escala;
+- usa somente professores ativos;
+- professores do grupo **Adolescentes** entram no rodízio de adolescentes;
+- professores do grupo **Menores** entram no rodízio de menores;
+- professores do grupo **Geral** podem atuar nas duas turmas;
+- prioriza quem participou menos vezes nas escalas existentes;
+- evita colocar o mesmo professor nas duas turmas no mesmo sábado, quando houver alternativa;
+- faz rodízio entre as mães ativas para auxílio na limpeza;
+- gera uma prévia editável antes de gravar;
+- o assunto padrão pode ser definido antes da geração e também alterado por sábado;
+- ao confirmar, grava todas as escalas de uma vez no Supabase;
+- a auditoria registra as escalas criadas automaticamente.
+
+As escalas automáticas recebem internamente a identificação:
+`Gerada automaticamente pelo sistema`.

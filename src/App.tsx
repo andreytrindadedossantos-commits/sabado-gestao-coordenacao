@@ -223,19 +223,101 @@ function Mothers({data,reload,toast}:{data:Data;admin:boolean;reload:()=>Promise
   {edit&&<Modal title="Alterar mãe" close={()=>setEdit(null)}><input value={edit.name} onChange={e=>setEdit({...edit,name:e.target.value})}/><input value={edit.phone} onChange={e=>setEdit({...edit,phone:e.target.value})}/><input value={edit.email} onChange={e=>setEdit({...edit,email:e.target.value})}/><input type="date" value={edit.birth} onChange={e=>setEdit({...edit,birth:e.target.value})}/><input value={edit.ageInfo} placeholder="Idade" onChange={e=>setEdit({...edit,ageInfo:e.target.value})}/><input value={edit.notes} onChange={e=>setEdit({...edit,notes:e.target.value})}/><label className="checkline"><input type="checkbox" checked={edit.active} onChange={e=>setEdit({...edit,active:e.target.checked})}/> Ativa</label><button className="primary" onClick={update}>Salvar alterações</button></Modal>}</>
 }
 
-function Schedules({data,reload,toast}:{data:Data;admin:boolean;reload:()=>Promise<void>;toast:(s:string)=>void}){
-  const blank={date:'',adolescentTeacher:'',youngerTeacher:'',cleaningHelper:'',topic:'',replacementReason:''};const[f,setF]=useState(blank),[edit,setEdit]=useState<Schedule|null>(null),[showAdd,setShowAdd]=useState(false);
-  const teacherNames=[...new Set(data.users.filter(u=>u.role==='Professor').map(u=>u.name).concat(data.schedules.flatMap(s=>[s.adolescentTeacher,s.youngerTeacher])))].filter(Boolean).sort();
+function Schedules({data,admin,reload,toast}:{data:Data;admin:boolean;reload:()=>Promise<void>;toast:(s:string)=>void}){
+  const blank={date:'',adolescentTeacher:'',youngerTeacher:'',cleaningHelper:'',topic:'',replacementReason:''};
+  const[f,setF]=useState(blank),[edit,setEdit]=useState<Schedule|null>(null),[showAdd,setShowAdd]=useState(false);
+  const[autoOpen,setAutoOpen]=useState(false),[autoMonth,setAutoMonth]=useState(()=>new Date().toISOString().slice(0,7)),[autoTopic,setAutoTopic]=useState('A definir'),[autoPreview,setAutoPreview]=useState<Omit<Schedule,'id'>[]>([]),[autoSaving,setAutoSaving]=useState(false);
+
+  const activeTeachers=data.users.filter(u=>u.role==='Professor'&&u.status!=='Inativo');
+  const teacherNames=[...new Set(activeTeachers.map(u=>u.name).concat(data.schedules.flatMap(s=>[s.adolescentTeacher,s.youngerTeacher])))].filter(Boolean).sort();
+  const activeMothers=data.mothers.filter(m=>m.active);
   const payload=(x:any)=>({date:x.date,adolescent_teacher:x.adolescentTeacher,younger_teacher:x.youngerTeacher,cleaning_helper:x.cleaningHelper,topic:x.topic,replacement_reason:x.replacementReason||''});
+
   const save=async()=>{if(!f.date||!f.adolescentTeacher||!f.youngerTeacher||!f.topic)return toast('Preencha data, professores e assunto.');const{error}=await supabase.from('sabado_schedules').insert(payload(f));if(error)return toast(error.message);setF(blank);setShowAdd(false);await reload();toast('Escala adicionada.')};
   const update=async()=>{if(!edit)return;const{error}=await supabase.from('sabado_schedules').update(payload(edit)).eq('id',edit.id);if(error)return toast(error.message);setEdit(null);await reload();toast('Escala alterada.')};
   const del=async(s:Schedule)=>{if(!confirm('Excluir esta escala?'))return;const{error}=await supabase.from('sabado_schedules').delete().eq('id',s.id);if(error)return toast(error.message);await reload();toast('Escala excluída.')};
-  return <><div className="section-head"><Title t="Escalas" s="Professores dos adolescentes, professores dos menores, mães auxiliares e assunto de cada sábado."/><button className="primary compact-action" onClick={()=>setShowAdd(true)}><Plus size={17}/> Adicionar escala</button></div>
-  {showAdd&&<div className="panel form data-form schedule-add-form"><div className="schedule-form-head"><h3><Plus size={18}/> Nova escala</h3><button className="icon-close schedule-form-close" title="Fechar" onClick={()=>setShowAdd(false)}><X size={18}/></button></div><input type="date" value={f.date} onChange={e=>setF({...f,date:e.target.value})}/><select value={f.adolescentTeacher} onChange={e=>setF({...f,adolescentTeacher:e.target.value})}><option value="">Professor — Adolescentes</option>{teacherNames.map(t=><option key={t}>{t}</option>)}</select><select value={f.youngerTeacher} onChange={e=>setF({...f,youngerTeacher:e.target.value})}><option value="">Professor — Menores</option>{teacherNames.map(t=><option key={t}>{t}</option>)}</select><select value={f.cleaningHelper} onChange={e=>setF({...f,cleaningHelper:e.target.value})}><option value="">Mãe — Auxílio na Limpeza</option>{data.mothers.filter(m=>m.active).map(m=><option key={m.id}>{m.name}</option>)}</select><input placeholder="Tema da palestra / assunto" value={f.topic} onChange={e=>setF({...f,topic:e.target.value})}/><button className="primary" onClick={save}><Save size={17}/> Salvar escala</button></div>}
-  <div className="panel schedule-panel">{data.schedules.map(s=><div className="schedule-row" key={s.id}><div className="schedule-date"><b>{fmt(s.date)}</b><small>sábado</small><div className="schedule-actions"><button className="edit-schedule" onClick={()=>setEdit({...s})}><Pencil size={15}/> Alterar</button><button className="danger-icon schedule-delete" title="Excluir escala" onClick={()=>del(s)}><Trash2 size={15}/></button></div></div><div className="schedule-field"><span className="field-label">Adolescentes</span><span className="text-separator">-</span><b>{s.adolescentTeacher}</b></div><div className="schedule-field"><span className="field-label">Menores</span><span className="text-separator">-</span><b>{s.youngerTeacher}</b></div><div className="schedule-field"><span className="field-label">Mãe - limpeza</span><span className="text-separator">-</span><b>{s.cleaningHelper||'—'}</b></div><div className="schedule-topic schedule-field"><span className="field-label">Assunto</span><span className="text-separator">-</span><b>{s.topic}</b></div></div>)}</div>
-  {edit&&<Modal title="Alterar escala" close={()=>setEdit(null)}><label>Professor — Adolescentes</label><select value={edit.adolescentTeacher} onChange={e=>setEdit({...edit,adolescentTeacher:e.target.value})}>{teacherNames.map(t=><option key={t}>{t}</option>)}</select><label>Professor — Menores</label><select value={edit.youngerTeacher} onChange={e=>setEdit({...edit,youngerTeacher:e.target.value})}>{teacherNames.map(t=><option key={t}>{t}</option>)}</select><label>Mãe — Auxílio na Limpeza</label><select value={edit.cleaningHelper} onChange={e=>setEdit({...edit,cleaningHelper:e.target.value})}><option value="">—</option>{data.mothers.filter(m=>m.active).map(m=><option key={m.id}>{m.name}</option>)}</select><label>Assunto</label><input value={edit.topic} onChange={e=>setEdit({...edit,topic:e.target.value})}/><label>Motivo da substituição</label><input value={edit.replacementReason} onChange={e=>setEdit({...edit,replacementReason:e.target.value})}/><button className="primary" onClick={update}>Salvar alteração</button></Modal>}</>
-}
 
+  const monthSaturdays=(ym:string)=>{
+    const[y,m]=ym.split('-').map(Number);
+    if(!y||!m)return[];
+    const result:string[]=[];
+    const d=new Date(y,m-1,1);
+    while(d.getMonth()===m-1&&d.getDay()!==6)d.setDate(d.getDate()+1);
+    while(d.getMonth()===m-1){
+      result.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+      d.setDate(d.getDate()+7);
+    }
+    return result;
+  };
+
+  const generateAutomatic=()=>{
+    if(!autoMonth)return toast('Selecione o mês.');
+    if(!activeTeachers.length)return toast('Cadastre pelo menos um professor ativo.');
+    const existingDates=new Set(data.schedules.map(s=>s.date));
+    const dates=monthSaturdays(autoMonth).filter(d=>!existingDates.has(d));
+    if(!dates.length){setAutoPreview([]);return toast('Todos os sábados deste mês já possuem escala.');}
+
+    const allNames=[...new Set(activeTeachers.map(u=>u.name))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    const adolescentPool=[...new Set(activeTeachers.filter(u=>u.group==='Adolescentes'||u.group==='Geral').map(u=>u.name))];
+    const youngerPool=[...new Set(activeTeachers.filter(u=>u.group==='Menores'||u.group==='Geral').map(u=>u.name))];
+    const adPool=(adolescentPool.length?adolescentPool:allNames).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    const yoPool=(youngerPool.length?youngerPool:allNames).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+    const momPool=activeMothers.map(m=>m.name).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+
+    const adCount:Record<string,number>={},yoCount:Record<string,number>={},momCount:Record<string,number>={};
+    const adLast:Record<string,string>={},yoLast:Record<string,string>={},momLast:Record<string,string>={};
+    adPool.forEach(n=>adCount[n]=0);yoPool.forEach(n=>yoCount[n]=0);momPool.forEach(n=>momCount[n]=0);
+
+    [...data.schedules].sort((a,b)=>a.date.localeCompare(b.date)).forEach(s=>{
+      if(s.adolescentTeacher&&adCount[s.adolescentTeacher]!==undefined){adCount[s.adolescentTeacher]++;adLast[s.adolescentTeacher]=s.date}
+      if(s.youngerTeacher&&yoCount[s.youngerTeacher]!==undefined){yoCount[s.youngerTeacher]++;yoLast[s.youngerTeacher]=s.date}
+      if(s.cleaningHelper&&momCount[s.cleaningHelper]!==undefined){momCount[s.cleaningHelper]++;momLast[s.cleaningHelper]=s.date}
+    });
+
+    const pick=(pool:string[],counts:Record<string,number>,last:Record<string,string>,avoid='')=>{
+      const available=pool.length>1&&avoid?pool.filter(n=>n!==avoid):pool;
+      return [...available].sort((a,b)=>(counts[a]||0)-(counts[b]||0)||String(last[a]||'').localeCompare(String(last[b]||''))||a.localeCompare(b,'pt-BR'))[0]||'';
+    };
+
+    const rows:Omit<Schedule,'id'>[]=dates.map(date=>{
+      const adolescentTeacher=pick(adPool,adCount,adLast);
+      if(adolescentTeacher){adCount[adolescentTeacher]=(adCount[adolescentTeacher]||0)+1;adLast[adolescentTeacher]=date}
+      const youngerTeacher=pick(yoPool,yoCount,yoLast,adolescentTeacher);
+      if(youngerTeacher){yoCount[youngerTeacher]=(yoCount[youngerTeacher]||0)+1;yoLast[youngerTeacher]=date}
+      const cleaningHelper=pick(momPool,momCount,momLast);
+      if(cleaningHelper){momCount[cleaningHelper]=(momCount[cleaningHelper]||0)+1;momLast[cleaningHelper]=date}
+      return{date,adolescentTeacher,youngerTeacher,cleaningHelper,topic:autoTopic.trim()||'A definir',replacementReason:'Gerada automaticamente pelo sistema'};
+    });
+    setAutoPreview(rows);
+  };
+
+  const changeAuto=(i:number,patch:Partial<Omit<Schedule,'id'>>)=>setAutoPreview(prev=>prev.map((r,idx)=>idx===i?{...r,...patch}:r));
+
+  const saveAutomatic=async()=>{
+    if(!autoPreview.length)return toast('Gere a prévia antes de salvar.');
+    if(autoPreview.some(r=>!r.adolescentTeacher||!r.youngerTeacher||!r.topic.trim()))return toast('Revise professores e assuntos antes de salvar.');
+    setAutoSaving(true);
+    try{
+      const dates=autoPreview.map(r=>r.date);
+      const{data:existing,error:checkError}=await supabase.from('sabado_schedules').select('date').in('date',dates);
+      if(checkError)return toast(checkError.message);
+      const existingSet=new Set((existing||[]).map((x:any)=>dateOnly(x.date)));
+      const rows=autoPreview.filter(r=>!existingSet.has(r.date));
+      if(!rows.length)return toast('Essas datas já possuem escala.');
+      const{error}=await supabase.from('sabado_schedules').insert(rows.map(payload));
+      if(error)return toast(error.message);
+      setAutoPreview([]);setAutoOpen(false);await reload();
+      toast(`${rows.length} escala${rows.length===1?'':'s'} gerada${rows.length===1?'':'s'} automaticamente.`);
+    }finally{setAutoSaving(false)}
+  };
+
+  return <><div className="section-head"><Title t="Escalas" s="Professores dos adolescentes, professores dos menores, mães auxiliares e assunto de cada sábado."/><div className="schedule-top-actions">{admin&&<button className="auto-generate-btn compact-action" onClick={()=>{setAutoOpen(true);setAutoPreview([])}}><CalendarDays size={17}/> Gerar automaticamente</button>}<button className="primary compact-action" onClick={()=>setShowAdd(true)}><Plus size={17}/> Adicionar escala</button></div></div>
+  {showAdd&&<div className="panel form data-form schedule-add-form"><div className="schedule-form-head"><h3><Plus size={18}/> Nova escala</h3><button className="icon-close schedule-form-close" title="Fechar" onClick={()=>setShowAdd(false)}><X size={18}/></button></div><input type="date" value={f.date} onChange={e=>setF({...f,date:e.target.value})}/><select value={f.adolescentTeacher} onChange={e=>setF({...f,adolescentTeacher:e.target.value})}><option value="">Professor — Adolescentes</option>{teacherNames.map(t=><option key={t}>{t}</option>)}</select><select value={f.youngerTeacher} onChange={e=>setF({...f,youngerTeacher:e.target.value})}><option value="">Professor — Menores</option>{teacherNames.map(t=><option key={t}>{t}</option>)}</select><select value={f.cleaningHelper} onChange={e=>setF({...f,cleaningHelper:e.target.value})}><option value="">Mãe — Auxílio na Limpeza</option>{activeMothers.map(m=><option key={m.id}>{m.name}</option>)}</select><input placeholder="Tema da palestra / assunto" value={f.topic} onChange={e=>setF({...f,topic:e.target.value})}/><button className="primary" onClick={save}><Save size={17}/> Salvar escala</button></div>}
+  <div className="panel schedule-panel">{data.schedules.map(s=><div className="schedule-row" key={s.id}><div className="schedule-date"><b>{fmt(s.date)}</b><small>sábado</small><div className="schedule-actions"><button className="edit-schedule" onClick={()=>setEdit({...s})}><Pencil size={15}/> Alterar</button><button className="danger-icon schedule-delete" title="Excluir escala" onClick={()=>del(s)}><Trash2 size={15}/></button></div></div><div className="schedule-field"><span className="field-label">Adolescentes</span><span className="text-separator">-</span><b>{s.adolescentTeacher}</b></div><div className="schedule-field"><span className="field-label">Menores</span><span className="text-separator">-</span><b>{s.youngerTeacher}</b></div><div className="schedule-field"><span className="field-label">Mãe - limpeza</span><span className="text-separator">-</span><b>{s.cleaningHelper||'—'}</b></div><div className="schedule-topic schedule-field"><span className="field-label">Assunto</span><span className="text-separator">-</span><b>{s.topic}</b></div></div>)}</div>
+  {autoOpen&&<Modal title="Gerar escala automática" close={()=>{setAutoOpen(false);setAutoPreview([])}}><div className="auto-schedule-config"><label>Mês da escala</label><input type="month" value={autoMonth} onChange={e=>{setAutoMonth(e.target.value);setAutoPreview([])}}/><label>Assunto padrão</label><input value={autoTopic} onChange={e=>{setAutoTopic(e.target.value);setAutoPreview([])}} placeholder="Ex.: A definir"/><div className="auto-rules"><b>Regras usadas automaticamente</b><span>• Professores ativos entram no rodízio.</span><span>• “Geral” pode atuar nas duas turmas.</span><span>• O sistema prioriza quem participou menos vezes.</span><span>• Evita o mesmo professor nas duas turmas no mesmo sábado, quando possível.</span><span>• Mães ativas entram no rodízio da limpeza.</span><span>• Sábados que já possuem escala são ignorados.</span></div><button className="primary" onClick={generateAutomatic}><CalendarDays size={17}/> Gerar prévia do mês</button></div>
+  {autoPreview.length>0&&<div className="auto-preview"><h3>Prévia — revise antes de salvar</h3>{autoPreview.map((r,i)=><div className="auto-preview-row" key={r.date}><div className="auto-preview-date"><b>{fmt(r.date)}</b><small>sábado</small></div><label>Adolescentes<select value={r.adolescentTeacher} onChange={e=>changeAuto(i,{adolescentTeacher:e.target.value})}>{teacherNames.map(t=><option key={t}>{t}</option>)}</select></label><label>Menores<select value={r.youngerTeacher} onChange={e=>changeAuto(i,{youngerTeacher:e.target.value})}>{teacherNames.map(t=><option key={t}>{t}</option>)}</select></label><label>Mãe — limpeza<select value={r.cleaningHelper} onChange={e=>changeAuto(i,{cleaningHelper:e.target.value})}><option value="">—</option>{activeMothers.map(m=><option key={m.id}>{m.name}</option>)}</select></label><label className="auto-topic">Assunto<input value={r.topic} onChange={e=>changeAuto(i,{topic:e.target.value})}/></label></div>)}<button className="primary" disabled={autoSaving} onClick={saveAutomatic}><Save size={17}/> {autoSaving?'Salvando...':'Confirmar e salvar escalas'}</button></div>}</Modal>}
+  {edit&&<Modal title="Alterar escala" close={()=>setEdit(null)}><label>Professor — Adolescentes</label><select value={edit.adolescentTeacher} onChange={e=>setEdit({...edit,adolescentTeacher:e.target.value})}>{teacherNames.map(t=><option key={t}>{t}</option>)}</select><label>Professor — Menores</label><select value={edit.youngerTeacher} onChange={e=>setEdit({...edit,youngerTeacher:e.target.value})}>{teacherNames.map(t=><option key={t}>{t}</option>)}</select><label>Mãe — Auxílio na Limpeza</label><select value={edit.cleaningHelper} onChange={e=>setEdit({...edit,cleaningHelper:e.target.value})}><option value="">—</option>{activeMothers.map(m=><option key={m.id}>{m.name}</option>)}</select><label>Assunto</label><input value={edit.topic} onChange={e=>setEdit({...edit,topic:e.target.value})}/><label>Motivo da substituição</label><input value={edit.replacementReason} onChange={e=>setEdit({...edit,replacementReason:e.target.value})}/><button className="primary" onClick={update}>Salvar alteração</button></Modal>}</>
+}
 function Meetings({data,reload,toast,setMeeting}:{data:Data;admin:boolean;reload:()=>Promise<void>;toast:(s:string)=>void;setMeeting:(m:Meeting)=>void}){
   const blank={title:'',date:'',time:'',location:'',notes:''};const[f,setF]=useState(blank),[edit,setEdit]=useState<Meeting|null>(null);
   const formatMeetingTime=(value:string)=>{const digits=value.replace(/\D/g,'').slice(0,4);if(digits.length<=2)return digits;return digits.slice(0,2)+':'+digits.slice(2)};

@@ -824,3 +824,103 @@ html.dark .admin-badge{
   line-height:1.45;
 }
 html.dark .login-subtitle{color:#fff!important}
+
+
+/* V41 — geração automática de escalas */
+.schedule-top-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.auto-generate-btn.compact-action{
+  background:#eef4ff!important;
+  color:#1f5fc4!important;
+  border:1px solid #b9cbed!important;
+}
+.auto-generate-btn.compact-action:hover{
+  background:#e1ebff!important;
+}
+html.dark .auto-generate-btn.compact-action{
+  background:#343b45!important;
+  color:#fff!important;
+  border-color:#697585!important;
+}
+html.dark .auto-generate-btn.compact-action:hover{
+  background:#414a56!important;
+}
+
+.auto-schedule-config{
+  display:grid;
+  gap:10px;
+}
+.auto-schedule-config>label,
+.auto-preview-row label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-size:12px;
+  font-weight:700;
+  color:var(--muted);
+}
+.auto-rules{
+  display:grid;
+  gap:5px;
+  padding:12px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--surface-soft);
+  font-size:13px;
+  line-height:1.4;
+}
+.auto-rules b{margin-bottom:2px;color:var(--text)}
+.auto-rules span{color:var(--muted)}
+html.dark .auto-rules span,
+html.dark .auto-preview-row label{color:#fff!important}
+
+.auto-preview{
+  display:grid;
+  gap:12px;
+  margin-top:6px;
+  padding-top:12px;
+  border-top:1px solid var(--border);
+}
+.auto-preview h3{margin:0}
+.auto-preview-row{
+  display:grid;
+  grid-template-columns:110px 1fr 1fr;
+  gap:9px;
+  padding:12px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--surface-soft);
+}
+.auto-preview-date{
+  grid-row:1 / span 2;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  justify-content:center;
+}
+.auto-preview-date small{color:var(--muted)}
+.auto-preview-row .auto-topic{
+  grid-column:2 / -1;
+}
+.auto-preview-row input,
+.auto-preview-row select{
+  width:100%;
+  min-width:0;
+}
+html.dark .auto-preview-date small{color:#fff!important}
+
+@media(max-width:700px){
+  .schedule-top-actions{
+    width:100%;
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .schedule-top-actions .compact-action{width:100%}
+  .auto-preview-row{grid-template-columns:1fr}
+  .auto-preview-date{grid-row:auto}
+  .auto-preview-row .auto-topic{grid-column:auto}
+}

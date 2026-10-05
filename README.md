@@ -60,3 +60,13 @@ Corrigido um erro da V28: a alteração do campo de horário havia atingido tamb
 - Removido o seletor nativo de horário também das telas Calendário e Datas Comemorativas no celular.
 - Agora esses campos usam entrada manual no formato HH:MM, evitando o corte na tela de confirmação do Android.
 - Incluída validação de horário nas duas telas.
+
+
+## V31 — PWA instalável no Android e iPhone/iPad
+- Adicionado manifest PWA completo com ícones 192x192, 512x512 e maskable.
+- Adicionado Apple Touch Icon 180x180 e metatags específicas para iOS.
+- Adicionado service worker com estratégia network-first para evitar servir versões antigas quando há internet e permitir abertura básica offline.
+- Adicionado botão “Instalar aplicativo” no cabeçalho.
+- Android/Chrome: usa o prompt nativo quando disponível.
+- iPhone/iPad: mostra instruções para Safari → Compartilhar → Adicionar à Tela de Início.
+- Adicionado suporte a safe areas do iPhone quando executado em modo standalone.

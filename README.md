@@ -89,3 +89,24 @@ Corrigido um erro da V28: a alteração do campo de horário havia atingido tamb
 - O botão usa ícone de celular em vez de ícone de download.
 - A ajuda do Android avisa para não usar “Fazer download da página”, pois isso não instala a PWA.
 - iPhone/iPad continuam usando Safari → Compartilhar → Adicionar à Tela de Início.
+
+## V34 — instalação PWA Android/iOS
+
+A tela mostrada pelo Chrome com a seta para baixo é a opção de DOWNLOAD DA PÁGINA, não a instalação da PWA.
+Nesta versão:
+- o service worker é registrado antes do React;
+- foi removida a reescrita global do Vercel para não interferir em `sw.js` e `site.webmanifest`;
+- a ajuda orienta a rolar o menu ⋮ do Chrome para baixo até “Instalar app” ou “Adicionar à tela inicial”;
+- o botão do sistema continua tentando abrir o prompt nativo automaticamente quando o Chrome o disponibiliza;
+- iOS continua usando Safari → Compartilhar → Adicionar à Tela de Início.
+
+## V35 — PWA somente online
+
+Esta versão remove o funcionamento offline do service worker.
+- Não salva páginas em cache para uso offline.
+- Não usa fallback de página armazenada.
+- Sempre tenta carregar a versão atual pela internet.
+- Ao ficar sem internet, o aplicativo dependerá da conexão para funcionar e sincronizar com o Supabase.
+
+Importante: se o Chrome já tiver uma página baixada manualmente, ela deve ser removida em Downloads.
+A opção com a seta para baixo do Chrome é “baixar página”, não “instalar aplicativo”.

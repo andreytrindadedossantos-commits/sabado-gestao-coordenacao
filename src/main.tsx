@@ -3,6 +3,13 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
 
+// Registra o service worker cedo para o Chrome reconhecer a PWA.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js?v=35', { scope: '/' })
+    .then(reg => reg.update().catch(() => {}))
+    .catch(() => {});
+}
+
 // Captura o evento de instalação antes do React montar.
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', (event: Event) => {
@@ -15,10 +22,3 @@ if (typeof window !== 'undefined') {
 createRoot(document.getElementById('root')!).render(
   <StrictMode><App /></StrictMode>
 );
-
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-  });
-}

@@ -70,3 +70,18 @@ PWA removida. O sistema volta a funcionar somente pelo navegador, como antes.
 - Sem funcionamento offline.
 - Mantidos os ajustes mobile de Reuniões, Calendário e Datas Comemorativas.
 - O acesso continua por https://evangelizacao.dynv6.net
+
+## V38 — Registro de Auditoria
+
+Foi adicionada uma tela exclusiva do administrador chamada **Auditoria**.
+
+O banco registra automaticamente quando houver:
+- cadastro, alteração ou exclusão de aluno;
+- cadastro, alteração ou exclusão de escala;
+- registro ou exclusão de chamada;
+- cadastro, alteração ou exclusão de reunião;
+- cadastro, alteração ou exclusão de evento/data comemorativa.
+
+Cada registro contém ação, tipo, item, usuário, e-mail, data/hora e os dados antes/depois da alteração.
+
+Observação: como o sistema ainda permite algumas operações sem login individual de professor, essas ações aparecem como **Usuário sem login**. Quando cada professor possuir login próprio, o e-mail/nome autenticado será identificado automaticamente.

@@ -19,6 +19,10 @@ type EventItem={id:string;title:string;date:string;type:string;time:string;notes
 type Meeting={id:string;title:string;date:string;time:string;location:string;notes:string};
 type Response={id:string;meetingId:string;userId:string;userName:string;status:'yes'|'no'};
 type Notice={id:string;title:string;body:string;date:string;kind:string;meetingId?:string};
+type AuditLog={
+ id:string;action:'insert'|'update'|'delete';entityType:string;entityName:string;recordId:string;
+ actorName:string;actorEmail:string;createdAt:string;beforeData:any;afterData:any
+};
 type Data={students:Student[];users:UserRec[];mothers:Mother[];schedules:Schedule[];attendance:Attendance[];events:EventItem[];meetings:Meeting[];responses:Response[];notifications:Notice[];settings:{name:string;subtitle:string}};
 
 const fmt=(d:string)=>d&&d.length>=10?d.slice(0,10).split('-').reverse().join('/'):'';
@@ -79,7 +83,7 @@ function App(){
   if(loading)return <div className="loading">Carregando Evangelização Infanto Juvenil...</div>;
 
   const nav=[['Painel','home',Users],['Alunos','students',Users],['Mães','mothers',Heart],['Escalas','schedules',BookOpen],['Reuniões','meetings',CalendarDays],['Chamada','attendance',ClipboardCheck],['Histórico de Aulas','history',History],['Professores','users',UserCog],['Aniversariantes do Mês','birthdays',Cake],['Calendário','calendar',CalendarDays],['Datas Comemorativas','celebrations',PartyPopper]] as const;
-  const extra=admin?[['Configurações','settings',Settings],['Administração','admin',UserCog]] as const:[];
+  const extra=admin?[['Auditoria','audit',History],['Configurações','settings',Settings],['Administração','admin',UserCog]] as const:[];
   const visibleNotifications=data.notifications.filter(n=>!hiddenNotices.includes(n.id));
   const unread=visibleNotifications.filter(n=>!read.includes(n.id)).length;
   const toast=(s:string)=>setMsg(s);
@@ -112,7 +116,7 @@ function App(){
     setMeetingNotice(null);setRsvpUserId('');await reload();toast(status==='yes'?'Participação confirmada.':'Ausência informada.');
   };
 
-  const content=page==='home'?<Dashboard data={data}/>:page==='students'?<Students data={data} admin={admin} reload={reload} toast={toast}/>:page==='mothers'?<Mothers data={data} admin={admin} reload={reload} toast={toast}/>:page==='schedules'?<Schedules data={data} admin={admin} reload={reload} toast={toast}/>:page==='meetings'?<Meetings data={data} admin={admin} reload={reload} toast={toast} setMeeting={setMeetingNotice}/>:page==='attendance'?<AttendancePage data={data} admin={admin} reload={reload} toast={toast}/>:page==='history'?<HistoryPage data={data} admin={admin} reload={reload} toast={toast}/>:page==='birthdays'?<Birthdays data={data}/>:page==='calendar'?<Calendar data={data} admin={admin} reload={reload} toast={toast}/>:page==='celebrations'?<Celebrations data={data} admin={admin} reload={reload} toast={toast}/>:page==='users'?<UsersPage data={data} admin={admin} reload={reload} toast={toast}/>:page==='settings'&&admin?<SettingsPage data={data} reload={reload} toast={toast}/>:page==='admin'&&admin?<AdminPage data={data} setPage={setPage}/>:<Dashboard data={data}/>;
+  const content=page==='home'?<Dashboard data={data}/>:page==='students'?<Students data={data} admin={admin} reload={reload} toast={toast}/>:page==='mothers'?<Mothers data={data} admin={admin} reload={reload} toast={toast}/>:page==='schedules'?<Schedules data={data} admin={admin} reload={reload} toast={toast}/>:page==='meetings'?<Meetings data={data} admin={admin} reload={reload} toast={toast} setMeeting={setMeetingNotice}/>:page==='attendance'?<AttendancePage data={data} admin={admin} reload={reload} toast={toast}/>:page==='history'?<HistoryPage data={data} admin={admin} reload={reload} toast={toast}/>:page==='birthdays'?<Birthdays data={data}/>:page==='calendar'?<Calendar data={data} admin={admin} reload={reload} toast={toast}/>:page==='celebrations'?<Celebrations data={data} admin={admin} reload={reload} toast={toast}/>:page==='users'?<UsersPage data={data} admin={admin} reload={reload} toast={toast}/>:page==='audit'&&admin?<AuditPage/>:page==='settings'&&admin?<SettingsPage data={data} reload={reload} toast={toast}/>:page==='admin'&&admin?<AdminPage data={data} setPage={setPage}/>:<Dashboard data={data}/>;
 
   return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><div className="brand-logo"><BookOpen size={26}/><span className="brand-heart">♥</span></div><div className="brand-copy"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}</aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><button className="top-icon-btn theme-toggle" title={dark?'Usar tema claro':'Usar tema cinza escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button>{admin&&<button className="ghost-btn" onClick={async()=>{await supabase.auth.signOut();setAdmin(false);setPage('home')}}>Sair</button>}</div></header>
   {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações</b><div className="notice-tools"><button className="read-all" onClick={()=>{const ids=visibleNotifications.map(n=>n.id);const next=[...new Set([...read,...ids])];setRead(next);localStorage.setItem('readNotices',JSON.stringify(next))}}>✓ Marcar todas como lidas</button><button className="read-all" onClick={enableDeviceNotifications}>🔔 Ativar no dispositivo</button>{visibleNotifications.length>0&&<button className="delete-notifications-btn" onClick={clearNotices}><Trash2 size={15}/> Excluir notificações</button>}<button className="icon-close" onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div></div>{visibleNotifications.map(n=><div className={read.includes(n.id)?'notice-item read':'notice-item'} key={n.id}><div className="notice-item-head"><b>{n.title}</b><button className="notice-delete" title="Excluir esta notificação" onClick={()=>deleteNotice(n.id)}><Trash2 size={15}/></button></div><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}</div>)}{!visibleNotifications.length&&<Empty text="Nenhuma notificação ainda."/>}</div>}
@@ -277,9 +281,38 @@ function UsersPage({data,admin,reload,toast}:{data:Data;admin:boolean;reload:()=
   {edit&&<Modal title="Alterar professor" close={()=>setEdit(null)}><input value={edit.name} onChange={e=>setEdit({...edit,name:e.target.value})}/><input type="email" value={edit.email} placeholder="E-mail" onChange={e=>setEdit({...edit,email:e.target.value})}/><input value={edit.phone} placeholder="Telefone / WhatsApp" onChange={e=>setEdit({...edit,phone:e.target.value})}/><select value={edit.group} onChange={e=>setEdit({...edit,group:e.target.value})}><option>Geral</option><option>Menores</option><option>Adolescentes</option></select><select value={edit.status} onChange={e=>setEdit({...edit,status:e.target.value})}><option>Ativo</option><option>Inativo</option></select>{admin&&<select value={edit.role} onChange={e=>setEdit({...edit,role:e.target.value})}><option>Professor</option><option>Administrador</option></select>}<button className="primary" onClick={update}>Salvar alterações</button></Modal>}</>
 }
 
+
+function AuditPage(){
+  const[logs,setLogs]=useState<AuditLog[]>([]),[loading,setLoading]=useState(true),[search,setSearch]=useState(''),[action,setAction]=useState('Todos'),[entity,setEntity]=useState('Todos'),[open,setOpen]=useState<string|null>(null);
+  const load=async()=>{
+    setLoading(true);
+    const{data,error}=await supabase.from('sabado_audit_logs').select('*').order('created_at',{ascending:false}).limit(500);
+    if(!error){
+      setLogs((data||[]).map((x:any)=>({
+        id:x.id,action:x.action,entityType:x.entity_type,entityName:x.entity_name||'',recordId:x.record_id||'',
+        actorName:x.actor_name||'Usuário sem login',actorEmail:x.actor_email||'',createdAt:x.created_at,
+        beforeData:x.before_data||null,afterData:x.after_data||null
+      })));
+    }
+    setLoading(false);
+  };
+  useEffect(()=>{load()},[]);
+  const actionLabel=(a:string)=>a==='insert'?'Cadastrou':a==='update'?'Alterou':'Excluiu';
+  const entities=['Todos',...Array.from(new Set(logs.map(x=>x.entityType))).sort()];
+  const filtered=logs.filter(x=>{
+    const q=search.trim().toLowerCase();
+    const matchesSearch=!q||[x.actorName,x.actorEmail,x.entityType,x.entityName].some(v=>(v||'').toLowerCase().includes(q));
+    return matchesSearch&&(action==='Todos'||x.action===action)&&(entity==='Todos'||x.entityType===entity);
+  });
+  const pretty=(v:any)=>JSON.stringify(v,null,2);
+  return <><div className="section-head"><Title t="Registro de Auditoria" s="Veja quem cadastrou, alterou ou excluiu registros e em qual data e horário."/><button className="primary compact-action" onClick={load}>Atualizar</button></div>
+  <div className="panel controls audit-controls"><input placeholder="Buscar por usuário ou registro" value={search} onChange={e=>setSearch(e.target.value)}/><select value={action} onChange={e=>setAction(e.target.value)}><option>Todos</option><option value="insert">Cadastrou</option><option value="update">Alterou</option><option value="delete">Excluiu</option></select><select value={entity} onChange={e=>setEntity(e.target.value)}>{entities.map(x=><option key={x}>{x}</option>)}</select></div>
+  <div className="panel audit-panel">{loading?<div className="empty">Carregando auditoria...</div>:filtered.map(log=><div className="audit-row" key={log.id}><div className={'audit-action '+log.action}>{actionLabel(log.action)}</div><div className="audit-main"><b>{log.entityType}: {log.entityName||'Sem identificação'}</b><span><strong>{log.actorName}</strong>{log.actorEmail&&log.actorEmail!==log.actorName?' · '+log.actorEmail:''}</span><small>{new Date(log.createdAt).toLocaleString('pt-BR')}</small></div><button className="edit-icon" onClick={()=>setOpen(open===log.id?null:log.id)}>{open===log.id?'Ocultar':'Detalhes'}</button>{open===log.id&&<div className="audit-details">{log.beforeData&&<div><b>Antes</b><pre>{pretty(log.beforeData)}</pre></div>}{log.afterData&&<div><b>Depois</b><pre>{pretty(log.afterData)}</pre></div>}</div>}</div>)}{!loading&&!filtered.length&&<Empty text="Nenhum registro de auditoria encontrado."/>}</div></>
+}
+
 function SettingsPage({data,reload,toast}:{data:Data;reload:()=>Promise<void>;toast:(s:string)=>void}){const[f,setF]=useState(data.settings);const save=async()=>{const{error}=await supabase.from('sabado_settings').update({...f,updated_at:new Date().toISOString()}).eq('id',1);if(error)return toast(error.message);await reload();toast('Configurações salvas.')};return <><Title t="Configurações" s="Personalize o sistema."/><div className="panel form"><input value={f.name} onChange={e=>setF({...f,name:e.target.value})}/><input value={f.subtitle} onChange={e=>setF({...f,subtitle:e.target.value})}/><button className="primary" onClick={save}>Salvar</button></div></>}
 
-function AdminPage({data,setPage}:{data:Data;setPage:(p:string)=>void}){return <><div className="hero"><p>Área exclusiva</p><h1>Painel do Super Administrador</h1><span>{ADMIN_EMAIL}</span></div><div className="grid"><Card t="Alunos" v={data.students.length}/><Card t="Professores" v={data.users.length}/><Card t="Chamadas" v={data.attendance.length}/><Card t="Notificações" v={data.notifications.length}/></div><div className="panel admin-links"><button className="primary" onClick={()=>setPage('users')}>Professores e Acessos</button><button className="primary" onClick={()=>setPage('history')}>Histórico de Chamadas</button><button className="primary" onClick={()=>setPage('settings')}>Configurações</button></div></>}
+function AdminPage({data,setPage}:{data:Data;setPage:(p:string)=>void}){return <><div className="hero"><p>Área exclusiva</p><h1>Painel do Super Administrador</h1><span>{ADMIN_EMAIL}</span></div><div className="grid"><Card t="Alunos" v={data.students.length}/><Card t="Professores" v={data.users.length}/><Card t="Chamadas" v={data.attendance.length}/><Card t="Notificações" v={data.notifications.length}/></div><div className="panel admin-links"><button className="primary" onClick={()=>setPage('users')}>Professores e Acessos</button><button className="primary" onClick={()=>setPage('history')}>Histórico de Chamadas</button><button className="primary" onClick={()=>setPage('audit')}>Registro de Auditoria</button><button className="primary" onClick={()=>setPage('settings')}>Configurações</button></div></>}
 
 const Card=({t,v}:{t:string;v:any})=><div className="card"><span>{t}</span><strong>{v}</strong></div>;
 const Title=({t,s}:{t:string;s:string})=><div className="title"><h1>{t}</h1><p>{s}</p></div>;

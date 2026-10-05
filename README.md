@@ -208,3 +208,16 @@ Os usuários antigos recebem automaticamente um login baseado no primeiro nome. 
 A senha é armazenada apenas como **hash bcrypt** em uma área privada do banco (`private`), nunca em texto aberto. O primeiro acesso cria uma sessão aleatória válida por **30 dias**. O navegador envia essa sessão ao Supabase em cada requisição, permitindo também identificar o usuário na Auditoria.
 
 O Super Administrador continua usando o acesso administrativo já existente.
+
+
+## V45 — correção do usuário Andrey
+
+Foi corrigida a identificação do usuário `Andrey`.
+
+Na V44, o cadastro do usuário Andrey usava o mesmo e-mail do Super Administrador e a função de login o excluía da busca por segurança. Por isso, a criação da senha não era gravada e o login retornava “Usuário ou senha incorretos”.
+
+A V45 permite que o mesmo cadastro tenha:
+- acesso normal pelo usuário `Andrey`;
+- acesso administrativo separado pelo botão **Acesso do Super Administrador**.
+
+A correção correspondente também foi aplicada no banco Supabase.

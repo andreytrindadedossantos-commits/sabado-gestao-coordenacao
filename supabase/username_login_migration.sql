@@ -75,11 +75,9 @@ set search_path=public,private,pg_catalog
 as $$
   select u
   from public.sabado_users u
-  where lower(coalesce(u.email,'')) <> 'andreytrindadedossantos@gmail.com'
-    and (
-      private.sabado_normalize_login(u.login_name)=private.sabado_normalize_login(p_username)
-      or private.sabado_normalize_login(u.name)=private.sabado_normalize_login(p_username)
-    )
+  where
+    private.sabado_normalize_login(u.login_name)=private.sabado_normalize_login(p_username)
+    or private.sabado_normalize_login(u.name)=private.sabado_normalize_login(p_username)
   order by case when private.sabado_normalize_login(u.login_name)=private.sabado_normalize_login(p_username) then 0 else 1 end
   limit 1
 $$;

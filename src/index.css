@@ -671,3 +671,52 @@ html:not(.dark) button.notice-action {
   border:1px solid #b9cbed !important;
   box-shadow:none !important;
 }
+
+
+/* V28 — ajuste mobile exclusivo da tela Reuniões
+   Evita o seletor nativo de horário do Android, que estava cortando a tela. */
+.meeting-time-input{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+
+@media (max-width:700px){
+  .meeting-form{
+    grid-template-columns:1fr!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+    padding:16px!important;
+  }
+
+  .meeting-form > *{
+    min-width:0!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+  }
+
+  .meeting-form input,
+  .meeting-form select,
+  .meeting-form button{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+  }
+
+  .meeting-card,
+  .meeting-main,
+  .meeting-actions,
+  .rsvp-summary{
+    min-width:0!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+  }
+
+  .meeting-actions button{
+    max-width:100%!important;
+  }
+}

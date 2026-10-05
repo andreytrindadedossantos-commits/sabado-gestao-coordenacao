@@ -6,19 +6,20 @@
   <meta name="color-scheme" content="light dark" />
   <meta name="theme-color" content="#2f6ee6" />
   <title>Evangelização Infanto Juvenil – Gestão e Coordenação</title>
+  <link rel="canonical" href="https://evangelizacao.dynv6.net/" />
 
-  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=24" />
-  <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png?v=24" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=24" />
-  <link rel="shortcut icon" href="/favicon.ico?v=24" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico?v=32" />
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png?v=32" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=32" />
+  <link rel="shortcut icon" href="/favicon.ico?v=32" />
   <meta name="application-name" content="Evangelização Infanto Juvenil" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Evangelização" />
   <meta name="format-detection" content="telephone=no" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=31" />
-  <link rel="manifest" href="/site.webmanifest?v=31" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=32" />
+  <link rel="manifest" href="/site.webmanifest?v=32" />
 
 
 <script>
@@ -27,6 +28,16 @@
       document.documentElement.classList.toggle('dark', savedTheme === 'dark');
       document.documentElement.setAttribute('data-theme', savedTheme);
       document.documentElement.style.colorScheme = savedTheme;
+    } catch (e) {}
+  </script>
+
+
+  <script>
+    // Domínio oficial do aplicativo
+    try {
+      if (location.hostname === 'evangelizacao-juvenil.vercel.app') {
+        location.replace('https://evangelizacao.dynv6.net' + location.pathname + location.search + location.hash);
+      }
     } catch (e) {}
   </script>
 

@@ -70,3 +70,13 @@ Corrigido um erro da V28: a alteração do campo de horário havia atingido tamb
 - Android/Chrome: usa o prompt nativo quando disponível.
 - iPhone/iPad: mostra instruções para Safari → Compartilhar → Adicionar à Tela de Início.
 - Adicionado suporte a safe areas do iPhone quando executado em modo standalone.
+
+
+## V32 — PWA oficial no dynv6
+- Domínio oficial do aplicativo: https://evangelizacao.dynv6.net
+- PWA configurada para iOS/iPadOS e Android.
+- Manifesto usa o dynv6 como id, start_url e scope.
+- O alias evangelizacao-juvenil.vercel.app redireciona para o domínio oficial.
+- Ícones e service worker receberam versão v32 para evitar cache antigo.
+- No iPhone/iPad: Safari → Compartilhar → Adicionar à Tela de Início.
+- No Android: botão Instalar aplicativo ou menu do Chrome → Instalar app.

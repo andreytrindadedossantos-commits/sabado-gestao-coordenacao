@@ -97,3 +97,18 @@ Foi liberado um acesso mais direto ao Super Administrador.
 
 E-mail de Super Administrador configurado no sistema:
 `andreytrindadedossantos@gmail.com`
+
+## V40 — correção de confirmação de e-mail
+
+O cadastro do Super Administrador agora informa explicitamente ao Supabase o retorno correto:
+`https://evangelizacao.dynv6.net/admin`
+
+Também foi adicionado o botão **Reenviar confirmação**.
+
+IMPORTANTE — Supabase:
+Em Authentication → URL Configuration, configure:
+- Site URL: `https://evangelizacao.dynv6.net`
+- Redirect URLs: `https://evangelizacao.dynv6.net/**`
+
+Se o Site URL continuar como `http://localhost:3000`, e-mails antigos podem continuar redirecionando para localhost.
+Depois de alterar, gere/reenvie um NOVO e-mail de confirmação.

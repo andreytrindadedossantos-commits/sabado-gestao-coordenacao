@@ -131,7 +131,41 @@ function App(){
   {msg&&<div className="toast">{msg}</div>}<section className="content">{content}</section><footer>© 2026 Evangelização Infanto Juvenil · Todos os direitos reservados.</footer></main></div>
 }
 
-function AdminLogin({onSuccess}:{onSuccess:()=>void}){const[email,setEmail]=useState(ADMIN_EMAIL),[password,setPassword]=useState(''),[mode,setMode]=useState<'login'|'signup'>('login'),[msg,setMsg]=useState('');const go=async()=>{if(email.toLowerCase()!==ADMIN_EMAIL)return setMsg('Acesso exclusivo do administrador.');const r=mode==='login'?await supabase.auth.signInWithPassword({email,password}):await supabase.auth.signUp({email,password});if(r.error)return setMsg(r.error.message);if(!r.data.session)return setMsg('Confira seu e-mail para confirmar a conta.');onSuccess()};return <div className="login-page"><div className="login-card"><h1>Super Administrador</h1><p className="login-subtitle">Entre para liberar Administração e Auditoria.</p><input value={email} onChange={e=>setEmail(e.target.value)} type="email"/><input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="Senha"/><button className="primary" onClick={go}>{mode==='login'?'Entrar':'Criar acesso'}</button><button className="link-btn" onClick={()=>setMode(mode==='login'?'signup':'login')}>{mode==='login'?'Primeiro acesso? Criar senha':'Já tenho acesso'}</button>{msg&&<small>{msg}</small>}</div></div>}
+function AdminLogin({onSuccess}:{onSuccess:()=>void}){
+  const[email,setEmail]=useState(ADMIN_EMAIL),[password,setPassword]=useState(''),[mode,setMode]=useState<'login'|'signup'>('login'),[msg,setMsg]=useState(''),[pending,setPending]=useState(false);
+  const redirectTo='https://evangelizacao.dynv6.net/admin';
+
+  const go=async()=>{
+    setMsg('');
+    if(email.toLowerCase()!==ADMIN_EMAIL)return setMsg('Acesso exclusivo do administrador.');
+    if(password.length<6)return setMsg('Informe uma senha com pelo menos 6 caracteres.');
+    setPending(true);
+    try{
+      const r=mode==='login'
+        ?await supabase.auth.signInWithPassword({email,password})
+        :await supabase.auth.signUp({email,password,options:{emailRedirectTo:redirectTo}});
+      if(r.error)return setMsg(r.error.message);
+      if(!r.data.session){
+        setMsg('Enviamos um novo e-mail de confirmação. Use somente o e-mail mais recente. Após confirmar, você voltará para o sistema.');
+        return;
+      }
+      onSuccess();
+    }finally{setPending(false)}
+  };
+
+  const resend=async()=>{
+    setMsg('');
+    if(email.toLowerCase()!==ADMIN_EMAIL)return setMsg('Acesso exclusivo do administrador.');
+    setPending(true);
+    try{
+      const r=await supabase.auth.resend({type:'signup',email,options:{emailRedirectTo:redirectTo}});
+      if(r.error)return setMsg(r.error.message);
+      setMsg('E-mail de confirmação reenviado. Abra o e-mail mais recente recebido.');
+    }finally{setPending(false)}
+  };
+
+  return <div className="login-page"><div className="login-card"><h1>Super Administrador</h1><p className="login-subtitle">Entre para liberar Administração e Auditoria.</p><input value={email} onChange={e=>setEmail(e.target.value)} type="email"/><input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder="Senha"/><button className="primary" disabled={pending} onClick={go}>{pending?'Aguarde...':mode==='login'?'Entrar':'Criar acesso'}</button><button className="link-btn" disabled={pending} onClick={()=>setMode(mode==='login'?'signup':'login')}>{mode==='login'?'Primeiro acesso? Criar senha':'Já tenho acesso'}</button>{mode==='signup'&&<button className="link-btn" disabled={pending} onClick={resend}>Reenviar confirmação</button>}{msg&&<small>{msg}</small>}</div></div>
+}
 
 function Dashboard({data}:{data:Data}){
   const currentYear=new Date().getFullYear(),today=new Date().toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'});

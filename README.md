@@ -249,3 +249,14 @@ A correção correspondente também foi aplicada no banco Supabase.
 - O botão **Administrador** foi removido da tela principal de login.
 - O acesso administrativo continua disponível apenas após o usuário **Andrey** entrar com a senha correta e escolher entre **Professor** ou **Administrador**.
 - Os demais usuários continuam vendo apenas as opções normais de login.
+
+
+## V49 — Auditoria de professores e mães auxiliares
+
+Corrigido o registro de auditoria para também gravar:
+- cadastro, alteração e exclusão de professores/usuários;
+- cadastro, alteração e exclusão de mães auxiliares.
+
+A auditoria continua registrando alunos, escalas, chamadas, reuniões e eventos.
+
+A correção já foi aplicada no Supabase. Registros criados antes desta correção não são gerados retroativamente; novas ações passam a aparecer normalmente.

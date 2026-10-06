@@ -270,3 +270,18 @@ A correção já foi aplicada no Supabase. Registros criados antes desta correç
 - O campo de usuário permanece preenchido e os campos de senha são limpos.
 - O usuário então informa a senha criada e clica em **Entrar**.
 - O acesso de 30 dias continua igual após o login.
+
+
+## V51 — Senha com letras, números e caracteres especiais
+
+- A senha não precisa mais ser somente numérica.
+- Pode conter letras, números e caracteres especiais.
+- Não é obrigatório misturar todos esses tipos.
+- A única regra é possuir pelo menos **6 caracteres**.
+- Após criar a senha, o sistema continua retornando automaticamente para a tela de login.
+
+
+## V52 — Mostrar/Ocultar senha
+
+- Adicionado ícone de olho na tela de login e na tela de criação de senha.
+- Agora é possível visualizar a senha antes de entrar ou confirmar o primeiro acesso.

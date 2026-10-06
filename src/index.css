@@ -136,6 +136,7 @@ header{height:78px;position:sticky;top:0;z-index:45;display:flex;align-items:cen
 .empty{padding:28px;text-align:center;color:var(--muted)}
 .loading{height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--text)}
 .login-page{min-height:100vh;display:grid;place-items:center;background:var(--bg);padding:20px}.login-card{width:min(430px,100%);background:#fff;border:1px solid var(--border);border-radius:18px;padding:28px;display:grid;gap:12px;box-shadow:var(--shadow)}.login-card input{padding:12px;min-height:48px}.admin-links{display:flex;gap:10px;flex-wrap:wrap}
+.password-field{position:relative}.password-field input{width:100%;padding-right:48px!important}.password-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:34px;height:34px;display:grid;place-items:center;border:0;background:transparent;color:var(--muted);padding:0}.password-toggle:hover{color:var(--text);background:transparent}
 footer{padding:24px;text-align:center;color:var(--muted);border-top:1px solid var(--border);margin-top:28px}
 
 @media(max-width:1200px){

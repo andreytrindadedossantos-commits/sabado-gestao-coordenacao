@@ -1140,3 +1140,37 @@ html.dark .access-instructions span{color:#fff!important}
 }
 .first-access-help b,.first-access-help strong{font-weight:700}
 html.dark .first-access-help{color:#fff}
+
+
+/* V53 — PWA Android + iOS */
+.pwa-install{display:grid;gap:7px;margin-top:2px}
+.pwa-install-button{width:100%!important}
+.pwa-install.compact{margin:12px 0 0}
+.pwa-install.compact .pwa-install-button{
+  width:100%!important;
+  justify-content:flex-start!important;
+  color:var(--text)!important;
+  border-color:var(--border)!important;
+}
+.pwa-install.compact .pwa-install-button:hover{background:var(--surface-soft)!important}
+.pwa-install-status{font-size:11px;color:var(--muted);line-height:1.4}
+.pwa-guide{display:grid;gap:12px;line-height:1.55}
+.pwa-guide-icon{
+  width:62px;height:62px;border-radius:16px;
+  display:grid;place-items:center;margin:0 auto 2px;
+  background:var(--blue-soft);color:var(--blue)
+}
+.pwa-guide p{margin:0}
+.pwa-guide ol{margin:0;padding-left:22px;display:grid;gap:9px}
+.pwa-guide li{padding-left:3px}
+.pwa-guide li svg{vertical-align:-3px}
+.pwa-guide small{color:var(--muted);line-height:1.5}
+html.dark .pwa-install.compact .pwa-install-button{color:#fff!important}
+html.dark .pwa-guide small{color:#fff!important}
+@media(display-mode:standalone){
+  .pwa-install{display:none!important}
+}
+@media(max-width:700px){
+  .pwa-install:not(.compact){margin-top:2px}
+  .pwa-install-button{min-height:44px!important}
+}

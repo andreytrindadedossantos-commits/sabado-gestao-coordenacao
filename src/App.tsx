@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Bell, BookOpen, Cake, CalendarDays, ClipboardCheck, Eye, EyeOff, Heart, History,
-  KeyRound, LogIn, Menu, Moon, PartyPopper, Pencil, Plus, Save, Settings, ShieldCheck, Sun, Trash2,
+  Bell, BookOpen, Cake, CalendarDays, ClipboardCheck, Download, Eye, EyeOff, Heart, History,
+  KeyRound, LogIn, Menu, Moon, PartyPopper, Pencil, Plus, Save, Settings, Share2, ShieldCheck, Smartphone, Sun, Trash2,
   UserCog, Users, X
 } from 'lucide-react';
 import { supabase } from './supabase';
@@ -177,7 +177,7 @@ function App(){
     return()=>{mounted=false;clearInterval(t);subscription.unsubscribe()}
   },[]);
 
-  useEffect(()=>{document.documentElement.classList.toggle('dark',dark);document.documentElement.setAttribute('data-theme',dark?'dark':'light');document.documentElement.style.colorScheme=dark?'dark':'light';localStorage.setItem('theme',dark?'dark':'light')},[dark]);
+  useEffect(()=>{document.documentElement.classList.toggle('dark',dark);document.documentElement.setAttribute('data-theme',dark?'dark':'light');document.documentElement.style.colorScheme=dark?'dark':'light';localStorage.setItem('theme',dark?'dark':'light');const themeMeta=document.querySelector('meta[name="theme-color"]');if(themeMeta)themeMeta.setAttribute('content',dark?'#20242b':'#2f6ee6')},[dark]);
   useEffect(()=>{
     if(!sessionEmail)return;
     const channel=supabase.channel('sabado-notifications-live').on('postgres_changes',{event:'INSERT',schema:'public',table:'sabado_notifications'},payload=>{
@@ -298,10 +298,96 @@ function App(){
 
   const doSignOut=async()=>{const token=localStorage.getItem(CUSTOM_SESSION_KEY);if(token)await supabase.rpc('sabado_username_logout',{p_token:token});localStorage.removeItem(CUSTOM_SESSION_KEY);localStorage.removeItem(LOGIN_VALIDITY_KEY);await supabase.auth.signOut();setAdmin(false);setCurrentUser(null);setSessionEmail('');setData(empty);setPage('home')};
 
-  return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><div className="brand-logo"><BookOpen size={26}/><span className="brand-heart">♥</span></div><div className="brand-copy"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}<div className="user-session-card"><ShieldCheck size={16}/><div><b>{currentUser?.name||sessionEmail}</b><small>{admin?'Administrador':'Professor'}</small></div></div></aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><button className="top-icon-btn theme-toggle" title={dark?'Usar tema claro':'Usar tema cinza escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button><button className="ghost-btn" onClick={doSignOut}>Sair</button></div></header>
+  return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><div className="brand-logo"><BookOpen size={26}/><span className="brand-heart">♥</span></div><div className="brand-copy"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}<InstallApp compact/><div className="user-session-card"><ShieldCheck size={16}/><div><b>{currentUser?.name||sessionEmail}</b><small>{admin?'Administrador':'Professor'}</small></div></div></aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><button className="top-icon-btn theme-toggle" title={dark?'Usar tema claro':'Usar tema cinza escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button><button className="ghost-btn" onClick={doSignOut}>Sair</button></div></header>
   {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações</b><div className="notice-tools"><button className="read-all" onClick={()=>{const ids=visibleNotifications.map(n=>n.id);const next=[...new Set([...read,...ids])];setRead(next);localStorage.setItem('readNotices',JSON.stringify(next))}}>✓ Marcar todas como lidas</button><button className="read-all" onClick={enableDeviceNotifications}>🔔 Ativar no dispositivo</button>{visibleNotifications.length>0&&<button className="delete-notifications-btn" onClick={clearNotices}><Trash2 size={15}/> Excluir notificações</button>}<button className="icon-close" onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div></div>{visibleNotifications.map(n=><div className={read.includes(n.id)?'notice-item read':'notice-item'} key={n.id}><div className="notice-item-head"><b>{n.title}</b><button className="notice-delete" title="Excluir esta notificação" onClick={()=>deleteNotice(n.id)}><Trash2 size={15}/></button></div><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}</div>)}{!visibleNotifications.length&&<Empty text="Nenhuma notificação ainda."/>}</div>}
   {meetingNotice&&<Modal title="Confirmar participação" close={()=>setMeetingNotice(null)}>{admin?<><label>Responder como</label><select value={rsvpUserId} onChange={e=>setRsvpUserId(e.target.value)}><option value="">Selecione o nome</option>{data.users.filter(u=>['Professor','Administrador'].includes(u.role)&&u.status!=='Inativo').sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(u=><option value={u.id} key={u.id}>{u.name}</option>)}</select></>:<div className="logged-response"><ShieldCheck size={18}/><span>Respondendo como <b>{currentUser?.name}</b></span></div>}<div className="rsvp-buttons"><button className="yes-rsvp" onClick={()=>respond('yes')}>✅ Vou participar</button><button className="no-rsvp" onClick={()=>respond('no')}>❌ Não poderei participar</button></div></Modal>}
   {msg&&<div className="toast">{msg}</div>}<section className="content">{content}</section><footer>© 2026 Evangelização Infanto Juvenil · Todos os direitos reservados.</footer></main></div>
+}
+
+
+type PwaInstallPromptEvent=Event&{
+  prompt:()=>Promise<any>;
+  userChoice?:Promise<{outcome:'accepted'|'dismissed';platform?:string}>
+};
+
+function InstallApp({compact=false}:{compact?:boolean}){
+  const[deferred,setDeferred]=useState<PwaInstallPromptEvent|null>(null);
+  const[helpOpen,setHelpOpen]=useState(false);
+  const[installed,setInstalled]=useState(false);
+  const[isMobile,setIsMobile]=useState(false);
+  const[isIos,setIsIos]=useState(false);
+  const[status,setStatus]=useState('');
+
+  useEffect(()=>{
+    const standalone=window.matchMedia('(display-mode: standalone)').matches||(window.navigator as any).standalone===true;
+    setInstalled(standalone);
+    const ua=navigator.userAgent||'';
+    const ios=/iPad|iPhone|iPod/i.test(ua)||((navigator as any).platform==='MacIntel'&&(navigator as any).maxTouchPoints>1);
+    setIsIos(ios);
+    setIsMobile(ios||/Android|Mobile/i.test(ua));
+
+    const before=(event:Event)=>{
+      event.preventDefault();
+      setDeferred(event as PwaInstallPromptEvent);
+    };
+    const done=()=>{setInstalled(true);setDeferred(null);setHelpOpen(false);setStatus('Aplicativo instalado com sucesso.')};
+
+    window.addEventListener('beforeinstallprompt',before);
+    window.addEventListener('appinstalled',done);
+    return()=>{window.removeEventListener('beforeinstallprompt',before);window.removeEventListener('appinstalled',done)};
+  },[]);
+
+  if(installed||(!isMobile&&!deferred))return null;
+
+  const install=async()=>{
+    setStatus('');
+    if(deferred){
+      try{
+        await deferred.prompt();
+        const choice=deferred.userChoice?await deferred.userChoice:null;
+        if(choice?.outcome==='accepted'){
+          setStatus('Instalação iniciada.');
+        }else if(choice?.outcome==='dismissed'){
+          setStatus('Instalação cancelada. Você pode tentar novamente pelo menu do navegador.');
+        }
+      }catch{
+        setHelpOpen(true);
+      }finally{
+        setDeferred(null);
+      }
+      return;
+    }
+    setHelpOpen(true);
+  };
+
+  return <div className={compact?'pwa-install compact':'pwa-install'}>
+    <button type="button" className={compact?'pwa-install-button nav':'pwa-install-button link-btn'} onClick={install}>
+      <Download size={18}/> Instalar aplicativo
+    </button>
+    {status&&<small className="pwa-install-status">{status}</small>}
+    {helpOpen&&<Modal title={isIos?'Instalar no iPhone / iPad':'Instalar no Android'} close={()=>setHelpOpen(false)}>
+      <div className="pwa-guide">
+        <div className="pwa-guide-icon"><Smartphone size={34}/></div>
+        {isIos?<>
+          <p>Para instalar como aplicativo no iPhone ou iPad:</p>
+          <ol>
+            <li>Toque no botão <b>Compartilhar</b> <Share2 size={16}/>.</li>
+            <li>Escolha <b>Adicionar à Tela de Início</b>.</li>
+            <li>Confirme em <b>Adicionar</b>.</li>
+          </ol>
+          <small>Depois, abra pelo ícone “Evangelização” na tela inicial. O sistema abrirá em modo aplicativo, sem a barra normal do navegador.</small>
+        </>:<>
+          <p>Seu navegador não exibiu o instalador automático. No Android:</p>
+          <ol>
+            <li>Abra o menu <b>⋮</b> do navegador.</li>
+            <li>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li>
+            <li>Confirme a instalação.</li>
+          </ol>
+          <small>No Chrome compatível, este botão normalmente abre o instalador do Android automaticamente.</small>
+        </>}
+      </div>
+    </Modal>}
+  </div>
 }
 
 function LoginPage({adminOnly,onSuccess}:{adminOnly:boolean;onSuccess:(session:any)=>Promise<void>}){
@@ -366,7 +452,7 @@ function LoginPage({adminOnly,onSuccess}:{adminOnly:boolean;onSuccess:(session:a
     finally{setPending(false)}
   };
 
-  return <div className="login-page"><div className="login-card teacher-login"><div className="login-brand"><div className="brand-logo"><BookOpen size={28}/><span className="brand-heart">♥</span></div><div><b>Evangelização Infanto Juvenil</b><span>Gestão e Coordenação</span></div></div><h1>{adminOnly?'Administrador':mode==='login'?'Entrar no sistema':'Criar minha senha'}</h1><p className="login-subtitle">{adminOnly?'Entre para liberar Administração e Auditoria.':mode==='login'?'Digite seu usuário e senha. Depois de entrar, este aparelho ficará liberado por 30 dias.':'No primeiro acesso, informe o seu usuário e crie uma senha com pelo menos 6 caracteres.'}</p>{!adminOnly&&mode==='login'&&<div className="first-access-help"><b>Primeiro acesso:</b> Clique no botão <strong>"Primeiro acesso? Criar senha"</strong>, informe o seu nome e cadastre uma senha com <strong>pelo menos 6 caracteres</strong>. Ela pode conter letras, números e caracteres especiais. Em seguida, clique em <strong>"Criar senha"</strong>.</div>}<input value={identity} disabled={adminOnly} onChange={e=>setIdentity(e.target.value)} type={adminOnly?'email':'text'} autoCapitalize="none" placeholder={adminOnly?'E-mail do administrador':'Usuário — ex.: Fernanda'}/><div className="password-field"><input value={password} onChange={e=>setPassword(e.target.value)} type={showPassword?'text':'password'} placeholder={mode==='login'?'Senha':'Crie uma senha'}/><button type="button" className="password-toggle" aria-label={showPassword?'Ocultar senha':'Mostrar senha'} title={showPassword?'Ocultar senha':'Mostrar senha'} onClick={()=>setShowPassword(v=>!v)}>{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></div>{mode==='signup'&&!adminOnly&&<div className="password-field"><input value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} type={showConfirmPassword?'text':'password'} placeholder="Confirmar senha"/><button type="button" className="password-toggle" aria-label={showConfirmPassword?'Ocultar senha':'Mostrar senha'} title={showConfirmPassword?'Ocultar senha':'Mostrar senha'} onClick={()=>setShowConfirmPassword(v=>!v)}>{showConfirmPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></div>}<button className="primary login-main-button" disabled={pending} onClick={go}>{pending?'Aguarde...':mode==='login'?<><LogIn size={18}/> Entrar</>:<><KeyRound size={18}/> Criar senha</>}</button>{!adminOnly&&<><button className="link-btn" disabled={pending} onClick={()=>{setMode(mode==='login'?'signup':'login');setPassword('');setConfirmPassword('');setShowPassword(false);setShowConfirmPassword(false);setMsg('')}}>{mode==='login'?'Primeiro acesso? Criar senha':'Já criei minha senha'}</button>{mode==='login'&&<button className="link-btn" onClick={()=>setMsg('Se esqueceu a senha, peça ao Administrador para liberar a criação de uma nova senha.')}>Esqueci minha senha</button>}</>}{adminOnly&&<button className="link-btn" onClick={()=>{window.location.href='/'}}>Voltar para login dos usuários</button>}{msg&&<small className="login-message">{msg}</small>}</div>{roleChoice&&<Modal title="Como deseja entrar?" close={()=>setRoleChoice(null)}><p className="role-choice-text">Seu usuário <b>Andrey</b> possui dois tipos de acesso. Escolha como deseja entrar agora:</p><div className="role-choice-buttons"><button className="role-choice professor" disabled={pending} onClick={()=>chooseRole('professor')}><Users size={22}/><span><b>Professor</b><small>Acesso conforme as permissões de professor</small></span></button><button className="role-choice admin" disabled={pending} onClick={()=>chooseRole('admin')}><ShieldCheck size={22}/><span><b>Administrador</b><small>Acesso completo ao sistema</small></span></button></div></Modal>}</div>
+  return <div className="login-page"><div className="login-card teacher-login"><div className="login-brand"><div className="brand-logo"><BookOpen size={28}/><span className="brand-heart">♥</span></div><div><b>Evangelização Infanto Juvenil</b><span>Gestão e Coordenação</span></div></div><h1>{adminOnly?'Administrador':mode==='login'?'Entrar no sistema':'Criar minha senha'}</h1><p className="login-subtitle">{adminOnly?'Entre para liberar Administração e Auditoria.':mode==='login'?'Digite seu usuário e senha. Depois de entrar, este aparelho ficará liberado por 30 dias.':'No primeiro acesso, informe o seu usuário e crie uma senha com pelo menos 6 caracteres.'}</p>{!adminOnly&&mode==='login'&&<div className="first-access-help"><b>Primeiro acesso:</b> Clique no botão <strong>"Primeiro acesso? Criar senha"</strong>, informe o seu nome e cadastre uma senha com <strong>pelo menos 6 caracteres</strong>. Ela pode conter letras, números e caracteres especiais. Em seguida, clique em <strong>"Criar senha"</strong>.</div>}<input value={identity} disabled={adminOnly} onChange={e=>setIdentity(e.target.value)} type={adminOnly?'email':'text'} autoCapitalize="none" placeholder={adminOnly?'E-mail do administrador':'Usuário — ex.: Fernanda'}/><div className="password-field"><input value={password} onChange={e=>setPassword(e.target.value)} type={showPassword?'text':'password'} placeholder={mode==='login'?'Senha':'Crie uma senha'}/><button type="button" className="password-toggle" aria-label={showPassword?'Ocultar senha':'Mostrar senha'} title={showPassword?'Ocultar senha':'Mostrar senha'} onClick={()=>setShowPassword(v=>!v)}>{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></div>{mode==='signup'&&!adminOnly&&<div className="password-field"><input value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} type={showConfirmPassword?'text':'password'} placeholder="Confirmar senha"/><button type="button" className="password-toggle" aria-label={showConfirmPassword?'Ocultar senha':'Mostrar senha'} title={showConfirmPassword?'Ocultar senha':'Mostrar senha'} onClick={()=>setShowConfirmPassword(v=>!v)}>{showConfirmPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></div>}<button className="primary login-main-button" disabled={pending} onClick={go}>{pending?'Aguarde...':mode==='login'?<><LogIn size={18}/> Entrar</>:<><KeyRound size={18}/> Criar senha</>}</button>{!adminOnly&&<><button className="link-btn" disabled={pending} onClick={()=>{setMode(mode==='login'?'signup':'login');setPassword('');setConfirmPassword('');setShowPassword(false);setShowConfirmPassword(false);setMsg('')}}>{mode==='login'?'Primeiro acesso? Criar senha':'Já criei minha senha'}</button>{mode==='login'&&<button className="link-btn" onClick={()=>setMsg('Se esqueceu a senha, peça ao Administrador para liberar a criação de uma nova senha.')}>Esqueci minha senha</button>}</>}{adminOnly&&<button className="link-btn" onClick={()=>{window.location.href='/'}}>Voltar para login dos usuários</button>}{msg&&<small className="login-message">{msg}</small>}<InstallApp/></div>{roleChoice&&<Modal title="Como deseja entrar?" close={()=>setRoleChoice(null)}><p className="role-choice-text">Seu usuário <b>Andrey</b> possui dois tipos de acesso. Escolha como deseja entrar agora:</p><div className="role-choice-buttons"><button className="role-choice professor" disabled={pending} onClick={()=>chooseRole('professor')}><Users size={22}/><span><b>Professor</b><small>Acesso conforme as permissões de professor</small></span></button><button className="role-choice admin" disabled={pending} onClick={()=>chooseRole('admin')}><ShieldCheck size={22}/><span><b>Administrador</b><small>Acesso completo ao sistema</small></span></button></div></Modal>}</div>
 }
 
 function AccessBlocked({message,email}:{message:string;email:string}){

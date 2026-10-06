@@ -285,3 +285,24 @@ A correção já foi aplicada no Supabase. Registros criados antes desta correç
 
 - Adicionado ícone de olho na tela de login e na tela de criação de senha.
 - Agora é possível visualizar a senha antes de entrar ou confirmar o primeiro acesso.
+
+
+## V53 — PWA Android e iOS
+
+O aplicativo instalável voltou, agora em modo **online-first**, sem cache dos dados do sistema e sem modo offline antigo.
+
+### Android
+- Manifest completo com ícones 192/512 e ícone maskable.
+- Botão **Instalar aplicativo** dentro do sistema.
+- Em Chrome/Chromium compatível, o botão abre o instalador nativo quando `beforeinstallprompt` estiver disponível.
+- Se o navegador não oferecer o prompt automático, o sistema mostra instruções para usar **Instalar app / Adicionar à tela inicial**.
+
+### iPhone / iPad
+- `apple-touch-icon` de 180×180.
+- Metadados `apple-mobile-web-app-*`.
+- Ao tocar em **Instalar aplicativo**, o sistema mostra:
+  **Compartilhar → Adicionar à Tela de Início → Adicionar**.
+- Ao abrir pelo ícone, funciona em janela standalone.
+
+### Importante
+Esta versão não armazena uma cópia offline do sistema. O service worker é propositalmente online-only e apaga caches antigos de tentativas anteriores de PWA para reduzir problemas de versão desatualizada.

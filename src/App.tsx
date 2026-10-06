@@ -126,7 +126,10 @@ function App(){
       return;
     }
     const mapped=mapCustomProfile(data);
-    setAdmin(false);setCurrentUser(mapped);setSessionEmail(mapped.loginName||mapped.name);setAccessError('');
+    const customAdmin=data.session_mode==='admin';
+    setAdmin(customAdmin);
+    setCurrentUser(customAdmin?{...mapped,role:'Administrador'}:mapped);
+    setSessionEmail(mapped.loginName||mapped.name);setAccessError('');
     const expiresAt=new Date(data.expires_at).getTime();
     if(Number.isFinite(expiresAt))localStorage.setItem(LOGIN_VALIDITY_KEY,String(expiresAt));
     await reload();
@@ -146,8 +149,8 @@ function App(){
       }
       if(!localStorage.getItem(LOGIN_VALIDITY_KEY))renewLoginValidity();
       setAdmin(true);
-      setSessionEmail('Super Administrador');
-      setCurrentUser({id:'',name:'Super Administrador',loginName:'Administrador',passwordCreated:true,email:ADMIN_EMAIL,phone:'',role:'Administrador',group:'Geral',status:'Ativo',permissions:{}});
+      setSessionEmail('Administrador');
+      setCurrentUser({id:'',name:'Administrador',loginName:'Administrador',passwordCreated:true,email:ADMIN_EMAIL,phone:'',role:'Administrador',group:'Geral',status:'Ativo',permissions:{}});
       await reload();
       setAuthReady(true);
       return;
@@ -212,7 +215,7 @@ function App(){
   }
 
   if(window.location.pathname==='/admin'&&!admin){
-    return <AccessBlocked message="Esta área é exclusiva do Super Administrador." email={sessionEmail}/>;
+    return <AccessBlocked message="Esta área é exclusiva do Administrador." email={sessionEmail}/>;
   }
 
   if(loading)return <div className="loading">Carregando Evangelização Infanto Juvenil...</div>;
@@ -295,14 +298,32 @@ function App(){
 
   const doSignOut=async()=>{const token=localStorage.getItem(CUSTOM_SESSION_KEY);if(token)await supabase.rpc('sabado_username_logout',{p_token:token});localStorage.removeItem(CUSTOM_SESSION_KEY);localStorage.removeItem(LOGIN_VALIDITY_KEY);await supabase.auth.signOut();setAdmin(false);setCurrentUser(null);setSessionEmail('');setData(empty);setPage('home')};
 
-  return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><div className="brand-logo"><BookOpen size={26}/><span className="brand-heart">♥</span></div><div className="brand-copy"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}<div className="user-session-card"><ShieldCheck size={16}/><div><b>{currentUser?.name||sessionEmail}</b><small>{admin?'Super Administrador':'Professor'}</small></div></div></aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><button className="top-icon-btn theme-toggle" title={dark?'Usar tema claro':'Usar tema cinza escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button><button className="ghost-btn" onClick={doSignOut}>Sair</button></div></header>
+  return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><div className="brand-logo"><BookOpen size={26}/><span className="brand-heart">♥</span></div><div className="brand-copy"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}<div className="user-session-card"><ShieldCheck size={16}/><div><b>{currentUser?.name||sessionEmail}</b><small>{admin?'Administrador':'Professor'}</small></div></div></aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><button className="top-icon-btn theme-toggle" title={dark?'Usar tema claro':'Usar tema cinza escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button><button className="ghost-btn" onClick={doSignOut}>Sair</button></div></header>
   {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações</b><div className="notice-tools"><button className="read-all" onClick={()=>{const ids=visibleNotifications.map(n=>n.id);const next=[...new Set([...read,...ids])];setRead(next);localStorage.setItem('readNotices',JSON.stringify(next))}}>✓ Marcar todas como lidas</button><button className="read-all" onClick={enableDeviceNotifications}>🔔 Ativar no dispositivo</button>{visibleNotifications.length>0&&<button className="delete-notifications-btn" onClick={clearNotices}><Trash2 size={15}/> Excluir notificações</button>}<button className="icon-close" onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div></div>{visibleNotifications.map(n=><div className={read.includes(n.id)?'notice-item read':'notice-item'} key={n.id}><div className="notice-item-head"><b>{n.title}</b><button className="notice-delete" title="Excluir esta notificação" onClick={()=>deleteNotice(n.id)}><Trash2 size={15}/></button></div><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}</div>)}{!visibleNotifications.length&&<Empty text="Nenhuma notificação ainda."/>}</div>}
   {meetingNotice&&<Modal title="Confirmar participação" close={()=>setMeetingNotice(null)}>{admin?<><label>Responder como</label><select value={rsvpUserId} onChange={e=>setRsvpUserId(e.target.value)}><option value="">Selecione o nome</option>{data.users.filter(u=>['Professor','Administrador'].includes(u.role)&&u.status!=='Inativo').sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(u=><option value={u.id} key={u.id}>{u.name}</option>)}</select></>:<div className="logged-response"><ShieldCheck size={18}/><span>Respondendo como <b>{currentUser?.name}</b></span></div>}<div className="rsvp-buttons"><button className="yes-rsvp" onClick={()=>respond('yes')}>✅ Vou participar</button><button className="no-rsvp" onClick={()=>respond('no')}>❌ Não poderei participar</button></div></Modal>}
   {msg&&<div className="toast">{msg}</div>}<section className="content">{content}</section><footer>© 2026 Evangelização Infanto Juvenil · Todos os direitos reservados.</footer></main></div>
 }
 
 function LoginPage({adminOnly,onSuccess}:{adminOnly:boolean;onSuccess:(session:any)=>Promise<void>}){
-  const[identity,setIdentity]=useState(adminOnly?ADMIN_EMAIL:''),[password,setPassword]=useState(''),[confirmPassword,setConfirmPassword]=useState(''),[mode,setMode]=useState<'login'|'signup'>('login'),[msg,setMsg]=useState(''),[pending,setPending]=useState(false);
+  const[identity,setIdentity]=useState(adminOnly?ADMIN_EMAIL:''),[password,setPassword]=useState(''),[confirmPassword,setConfirmPassword]=useState(''),[mode,setMode]=useState<'login'|'signup'>('login'),[msg,setMsg]=useState(''),[pending,setPending]=useState(false),[roleChoice,setRoleChoice]=useState<any>(null);
+
+  const finishCustomLogin=(data:any)=>{
+    localStorage.setItem(CUSTOM_SESSION_KEY,data.token);
+    localStorage.setItem(LOGIN_VALIDITY_KEY,String(new Date(data.expires_at).getTime()));
+    window.location.href='/';
+  };
+
+  const chooseRole=async(accessMode:'professor'|'admin')=>{
+    if(!roleChoice?.token)return;
+    setPending(true);setMsg('');
+    try{
+      const{data,error}=await supabase.rpc('sabado_username_select_mode',{p_token:roleChoice.token,p_mode:accessMode});
+      if(error)return setMsg(error.message||'Não foi possível selecionar o tipo de acesso.');
+      if(!data?.ok)return setMsg('Não foi possível selecionar o tipo de acesso.');
+      finishCustomLogin(roleChoice);
+    }catch(e:any){setMsg(e.message||'Não foi possível concluir o acesso.')}
+    finally{setPending(false)}
+  };
 
   const go=async()=>{
     setMsg('');
@@ -313,7 +334,7 @@ function LoginPage({adminOnly,onSuccess}:{adminOnly:boolean;onSuccess:(session:a
     setPending(true);
     try{
       if(adminOnly){
-        if(clean.toLowerCase()!==ADMIN_EMAIL)return setMsg('Esta tela é exclusiva do Super Administrador.');
+        if(clean.toLowerCase()!==ADMIN_EMAIL)return setMsg('Esta tela é exclusiva do Administrador.');
         const r=await supabase.auth.signInWithPassword({email:clean.toLowerCase(),password});
         if(r.error)return setMsg(r.error.message==='Invalid login credentials'?'E-mail ou senha incorretos.':r.error.message);
         renewLoginValidity();
@@ -325,14 +346,16 @@ function LoginPage({adminOnly,onSuccess}:{adminOnly:boolean;onSuccess:(session:a
       const{data,error}=await supabase.rpc(rpcName,{p_username:clean,p_password:password});
       if(error)return setMsg(error.message||'Não foi possível concluir o acesso.');
       if(!data?.token)return setMsg(data?.error||'Não foi possível iniciar o acesso.');
-      localStorage.setItem(CUSTOM_SESSION_KEY,data.token);
-      localStorage.setItem(LOGIN_VALIDITY_KEY,String(new Date(data.expires_at).getTime()));
-      window.location.href='/';
+      if(data?.can_choose_admin===true){
+        setRoleChoice(data);
+        return;
+      }
+      finishCustomLogin(data);
     }catch(e:any){setMsg(e.message||'Não foi possível concluir o acesso.')}
     finally{setPending(false)}
   };
 
-  return <div className="login-page"><div className="login-card teacher-login"><div className="login-brand"><div className="brand-logo"><BookOpen size={28}/><span className="brand-heart">♥</span></div><div><b>Evangelização Infanto Juvenil</b><span>Gestão e Coordenação</span></div></div><h1>{adminOnly?'Super Administrador':mode==='login'?'Entrar no sistema':'Criar minha senha'}</h1><p className="login-subtitle">{adminOnly?'Entre para liberar Administração e Auditoria.':mode==='login'?'Digite seu usuário e senha. Depois de entrar, este aparelho ficará liberado por 30 dias.':'No primeiro acesso, informe o usuário cadastrado pelo administrador e crie sua senha.'}</p><input value={identity} disabled={adminOnly} onChange={e=>setIdentity(e.target.value)} type={adminOnly?'email':'text'} autoCapitalize="none" placeholder={adminOnly?'E-mail do administrador':'Usuário — ex.: Fernanda'}/><input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder={mode==='login'?'Senha':'Crie uma senha'}/>{mode==='signup'&&!adminOnly&&<input value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} type="password" placeholder="Confirmar senha"/>}<button className="primary login-main-button" disabled={pending} onClick={go}>{pending?'Aguarde...':mode==='login'?<><LogIn size={18}/> Entrar</>:<><KeyRound size={18}/> Criar senha</>}</button>{!adminOnly&&<><button className="link-btn" disabled={pending} onClick={()=>{setMode(mode==='login'?'signup':'login');setPassword('');setConfirmPassword('');setMsg('')}}>{mode==='login'?'Primeiro acesso? Criar senha':'Já criei minha senha'}</button>{mode==='login'&&<button className="link-btn" onClick={()=>setMsg('Se esqueceu a senha, peça ao Super Administrador para liberar a criação de uma nova senha.')}>Esqueci minha senha</button>}<button className="link-btn admin-login-link" onClick={()=>{window.location.href='/admin'}}>Acesso do Super Administrador</button></>}{adminOnly&&<button className="link-btn" onClick={()=>{window.location.href='/'}}>Voltar para login dos usuários</button>}{msg&&<small className="login-message">{msg}</small>}</div></div>
+  return <div className="login-page"><div className="login-card teacher-login"><div className="login-brand"><div className="brand-logo"><BookOpen size={28}/><span className="brand-heart">♥</span></div><div><b>Evangelização Infanto Juvenil</b><span>Gestão e Coordenação</span></div></div><h1>{adminOnly?'Administrador':mode==='login'?'Entrar no sistema':'Criar minha senha'}</h1><p className="login-subtitle">{adminOnly?'Entre para liberar Administração e Auditoria.':mode==='login'?'Digite seu usuário e senha. Depois de entrar, este aparelho ficará liberado por 30 dias.':'No primeiro acesso, informe o usuário cadastrado pelo administrador e crie sua senha.'}</p><input value={identity} disabled={adminOnly} onChange={e=>setIdentity(e.target.value)} type={adminOnly?'email':'text'} autoCapitalize="none" placeholder={adminOnly?'E-mail do administrador':'Usuário — ex.: Fernanda'}/><input value={password} onChange={e=>setPassword(e.target.value)} type="password" placeholder={mode==='login'?'Senha':'Crie uma senha'}/>{mode==='signup'&&!adminOnly&&<input value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} type="password" placeholder="Confirmar senha"/>}<button className="primary login-main-button" disabled={pending} onClick={go}>{pending?'Aguarde...':mode==='login'?<><LogIn size={18}/> Entrar</>:<><KeyRound size={18}/> Criar senha</>}</button>{!adminOnly&&<><button className="link-btn" disabled={pending} onClick={()=>{setMode(mode==='login'?'signup':'login');setPassword('');setConfirmPassword('');setMsg('')}}>{mode==='login'?'Primeiro acesso? Criar senha':'Já criei minha senha'}</button>{mode==='login'&&<button className="link-btn" onClick={()=>setMsg('Se esqueceu a senha, peça ao Administrador para liberar a criação de uma nova senha.')}>Esqueci minha senha</button>}<button className="link-btn admin-login-link" onClick={()=>{window.location.href='/admin'}}>Administrador</button></>}{adminOnly&&<button className="link-btn" onClick={()=>{window.location.href='/'}}>Voltar para login dos usuários</button>}{msg&&<small className="login-message">{msg}</small>}</div>{roleChoice&&<Modal title="Como deseja entrar?" close={()=>setRoleChoice(null)}><p className="role-choice-text">Seu usuário <b>Andrey</b> possui dois tipos de acesso. Escolha como deseja entrar agora:</p><div className="role-choice-buttons"><button className="role-choice professor" disabled={pending} onClick={()=>chooseRole('professor')}><Users size={22}/><span><b>Professor</b><small>Acesso conforme as permissões de professor</small></span></button><button className="role-choice admin" disabled={pending} onClick={()=>chooseRole('admin')}><ShieldCheck size={22}/><span><b>Administrador</b><small>Acesso completo ao sistema</small></span></button></div></Modal>}</div>
 }
 
 function AccessBlocked({message,email}:{message:string;email:string}){
@@ -592,7 +615,7 @@ function UsersPage({data,admin,reload,toast}:{data:Data;admin:boolean;reload:()=
 
   const del=async(u:UserRec)=>{
     if(!admin)return;
-    if(u.email?.toLowerCase()===ADMIN_EMAIL)return toast('O Super Administrador não pode ser excluído aqui.');
+    if(u.email?.toLowerCase()===ADMIN_EMAIL)return toast('O Administrador não pode ser excluído aqui.');
     if(!confirm('Excluir '+u.name+'?'))return;
     const{error}=await supabase.from('sabado_users').delete().eq('id',u.id);
     if(error)return toast(error.message);
@@ -637,7 +660,7 @@ function AuditPage(){
 
 function SettingsPage({data,reload,toast}:{data:Data;reload:()=>Promise<void>;toast:(s:string)=>void}){const[f,setF]=useState(data.settings);const save=async()=>{const{error}=await supabase.from('sabado_settings').update({...f,updated_at:new Date().toISOString()}).eq('id',1);if(error)return toast(error.message);await reload();toast('Configurações salvas.')};return <><Title t="Configurações" s="Personalize o sistema."/><div className="panel form"><input value={f.name} onChange={e=>setF({...f,name:e.target.value})}/><input value={f.subtitle} onChange={e=>setF({...f,subtitle:e.target.value})}/><button className="primary" onClick={save}>Salvar</button></div></>}
 
-function AdminPage({data,setPage}:{data:Data;setPage:(p:string)=>void}){return <><div className="hero"><p>Área exclusiva</p><h1>Painel do Super Administrador</h1><span>{ADMIN_EMAIL}</span></div><div className="grid"><Card t="Alunos" v={data.students.length}/><Card t="Professores" v={data.users.length}/><Card t="Chamadas" v={data.attendance.length}/><Card t="Notificações" v={data.notifications.length}/></div><div className="panel admin-links"><button className="primary" onClick={()=>setPage('users')}>Professores e Acessos</button><button className="primary" onClick={()=>setPage('history')}>Histórico de Chamadas</button><button className="primary" onClick={()=>setPage('audit')}>Registro de Auditoria</button><button className="primary" onClick={()=>setPage('settings')}>Configurações</button></div></>}
+function AdminPage({data,setPage}:{data:Data;setPage:(p:string)=>void}){return <><div className="hero"><p>Área exclusiva</p><h1>Painel do Administrador</h1><span>{ADMIN_EMAIL}</span></div><div className="grid"><Card t="Alunos" v={data.students.length}/><Card t="Professores" v={data.users.length}/><Card t="Chamadas" v={data.attendance.length}/><Card t="Notificações" v={data.notifications.length}/></div><div className="panel admin-links"><button className="primary" onClick={()=>setPage('users')}>Professores e Acessos</button><button className="primary" onClick={()=>setPage('history')}>Histórico de Chamadas</button><button className="primary" onClick={()=>setPage('audit')}>Registro de Auditoria</button><button className="primary" onClick={()=>setPage('settings')}>Configurações</button></div></>}
 
 const Card=({t,v}:{t:string;v:any})=><div className="card"><span>{t}</span><strong>{v}</strong></div>;
 const Title=({t,s}:{t:string;s:string})=><div className="title"><h1>{t}</h1><p>{s}</p></div>;

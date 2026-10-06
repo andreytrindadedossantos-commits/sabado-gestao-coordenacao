@@ -229,3 +229,16 @@ A correção correspondente também foi aplicada no banco Supabase.
 - O título permanece visível no topo.
 - O botão **Confirmar e salvar permissões** fica fixo na parte inferior do modal.
 - Funciona em computador e celular, mesmo quando a lista de permissões é maior que a altura da tela.
+
+
+## V47 — Andrey: Professor ou Administrador
+
+- O texto **Super Administrador** foi trocado por **Administrador** na interface.
+- Ao entrar com o usuário **Andrey** e a senha correta, o sistema mostra duas opções:
+  - **Professor** — entra com as permissões normais do professor;
+  - **Administrador** — entra com acesso completo ao sistema.
+- Essa escolha aparece somente para o usuário `Andrey`.
+- Os demais usuários entram normalmente como professores, sem ver essa tela.
+- O botão separado de acesso administrativo na tela inicial agora aparece apenas como **Administrador**.
+- O modo escolhido fica vinculado à sessão de 30 dias daquele aparelho.
+- A correção necessária no Supabase já foi aplicada no projeto atual.

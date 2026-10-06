@@ -1104,3 +1104,24 @@ html.dark .access-instructions span{color:#fff!important}
     min-height:60px!important;
   }
 }
+
+
+/* V47 — escolha Professor / Administrador exclusiva do usuário Andrey */
+.role-choice-text{margin:0;color:var(--muted);line-height:1.55}
+.role-choice-buttons{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px}
+.role-choice{
+  min-height:110px;border:1px solid var(--border-strong);border-radius:13px;
+  background:var(--surface-soft);color:var(--text);padding:16px;display:flex;
+  align-items:center;gap:12px;text-align:left;cursor:pointer
+}
+.role-choice:hover{border-color:var(--blue);transform:translateY(-1px)}
+.role-choice>span{display:flex;flex-direction:column;gap:5px}
+.role-choice b{font-size:16px}
+.role-choice small{font-size:12px;color:var(--muted);line-height:1.35}
+.role-choice.admin{border-color:#8fb4ff;background:rgba(52,116,235,.08)}
+.role-choice.admin svg{color:var(--blue)}
+.role-choice.professor svg{color:var(--text)}
+@media(max-width:600px){
+  .role-choice-buttons{grid-template-columns:1fr}
+  .role-choice{min-height:88px}
+}

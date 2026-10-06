@@ -242,3 +242,10 @@ A correção correspondente também foi aplicada no banco Supabase.
 - O botão separado de acesso administrativo na tela inicial agora aparece apenas como **Administrador**.
 - O modo escolhido fica vinculado à sessão de 30 dias daquele aparelho.
 - A correção necessária no Supabase já foi aplicada no projeto atual.
+
+
+## V48 — Remoção do botão Administrador na tela inicial
+
+- O botão **Administrador** foi removido da tela principal de login.
+- O acesso administrativo continua disponível apenas após o usuário **Andrey** entrar com a senha correta e escolher entre **Professor** ou **Administrador**.
+- Os demais usuários continuam vendo apenas as opções normais de login.

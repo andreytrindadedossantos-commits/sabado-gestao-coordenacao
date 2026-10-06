@@ -298,7 +298,7 @@ function App(){
 
   const doSignOut=async()=>{const token=localStorage.getItem(CUSTOM_SESSION_KEY);if(token)await supabase.rpc('sabado_username_logout',{p_token:token});localStorage.removeItem(CUSTOM_SESSION_KEY);localStorage.removeItem(LOGIN_VALIDITY_KEY);await supabase.auth.signOut();setAdmin(false);setCurrentUser(null);setSessionEmail('');setData(empty);setPage('home')};
 
-  return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><div className="brand-logo"><BookOpen size={26}/><span className="brand-heart">♥</span></div><div className="brand-copy"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}<InstallApp compact/><div className="user-session-card"><ShieldCheck size={16}/><div><b>{currentUser?.name||sessionEmail}</b><small>{admin?'Administrador':'Professor'}</small></div></div></aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><button className="top-icon-btn theme-toggle" title={dark?'Usar tema claro':'Usar tema cinza escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button><button className="ghost-btn" onClick={doSignOut}>Sair</button></div></header>
+  return <div className="shell"><InstallApp/><aside className={menu?'side open':'side'}><div className="brand"><div className="brand-logo"><BookOpen size={26}/><span className="brand-heart">♥</span></div><div className="brand-copy"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}<div className="user-session-card"><ShieldCheck size={16}/><div><b>{currentUser?.name||sessionEmail}</b><small>{admin?'Administrador':'Professor'}</small></div></div></aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><button className="top-icon-btn theme-toggle" title={dark?'Usar tema claro':'Usar tema cinza escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button><button className="ghost-btn" onClick={doSignOut}>Sair</button></div></header>
   {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações</b><div className="notice-tools"><button className="read-all" onClick={()=>{const ids=visibleNotifications.map(n=>n.id);const next=[...new Set([...read,...ids])];setRead(next);localStorage.setItem('readNotices',JSON.stringify(next))}}>✓ Marcar todas como lidas</button><button className="read-all" onClick={enableDeviceNotifications}>🔔 Ativar no dispositivo</button>{visibleNotifications.length>0&&<button className="delete-notifications-btn" onClick={clearNotices}><Trash2 size={15}/> Excluir notificações</button>}<button className="icon-close" onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div></div>{visibleNotifications.map(n=><div className={read.includes(n.id)?'notice-item read':'notice-item'} key={n.id}><div className="notice-item-head"><b>{n.title}</b><button className="notice-delete" title="Excluir esta notificação" onClick={()=>deleteNotice(n.id)}><Trash2 size={15}/></button></div><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}</div>)}{!visibleNotifications.length&&<Empty text="Nenhuma notificação ainda."/>}</div>}
   {meetingNotice&&<Modal title="Confirmar participação" close={()=>setMeetingNotice(null)}>{admin?<><label>Responder como</label><select value={rsvpUserId} onChange={e=>setRsvpUserId(e.target.value)}><option value="">Selecione o nome</option>{data.users.filter(u=>['Professor','Administrador'].includes(u.role)&&u.status!=='Inativo').sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(u=><option value={u.id} key={u.id}>{u.name}</option>)}</select></>:<div className="logged-response"><ShieldCheck size={18}/><span>Respondendo como <b>{currentUser?.name}</b></span></div>}<div className="rsvp-buttons"><button className="yes-rsvp" onClick={()=>respond('yes')}>✅ Vou participar</button><button className="no-rsvp" onClick={()=>respond('no')}>❌ Não poderei participar</button></div></Modal>}
   {msg&&<div className="toast">{msg}</div>}<section className="content">{content}</section><footer>© 2026 Evangelização Infanto Juvenil · Todos os direitos reservados.</footer></main></div>
@@ -310,80 +310,123 @@ type PwaInstallPromptEvent=Event&{
   userChoice?:Promise<{outcome:'accepted'|'dismissed';platform?:string}>
 };
 
-function InstallApp({compact=false}:{compact?:boolean}){
-  const[deferred,setDeferred]=useState<PwaInstallPromptEvent|null>(null);
+function InstallApp(){
+  const[deferred,setDeferred]=useState<PwaInstallPromptEvent|null>(()=>(window as any).__eijInstallPrompt||null);
   const[helpOpen,setHelpOpen]=useState(false);
   const[installed,setInstalled]=useState(false);
-  const[isMobile,setIsMobile]=useState(false);
+  const[isAndroid,setIsAndroid]=useState(false);
   const[isIos,setIsIos]=useState(false);
+  const[isChrome,setIsChrome]=useState(false);
   const[status,setStatus]=useState('');
 
   useEffect(()=>{
     const standalone=window.matchMedia('(display-mode: standalone)').matches||(window.navigator as any).standalone===true;
     setInstalled(standalone);
+
     const ua=navigator.userAgent||'';
     const ios=/iPad|iPhone|iPod/i.test(ua)||((navigator as any).platform==='MacIntel'&&(navigator as any).maxTouchPoints>1);
+    const android=/Android/i.test(ua);
+    const chrome=/Chrome\//i.test(ua)&&!/EdgA|OPR|SamsungBrowser|Firefox/i.test(ua);
     setIsIos(ios);
-    setIsMobile(ios||/Android|Mobile/i.test(ua));
+    setIsAndroid(android);
+    setIsChrome(chrome);
 
+    const takePrompt=()=>{
+      const prompt=(window as any).__eijInstallPrompt as PwaInstallPromptEvent|undefined;
+      if(prompt){
+        setDeferred(prompt);
+        setStatus('');
+      }
+    };
     const before=(event:Event)=>{
       event.preventDefault();
+      (window as any).__eijInstallPrompt=event;
       setDeferred(event as PwaInstallPromptEvent);
+      setStatus('');
     };
-    const done=()=>{setInstalled(true);setDeferred(null);setHelpOpen(false);setStatus('Aplicativo instalado com sucesso.')};
+    const done=()=>{
+      setInstalled(true);
+      setDeferred(null);
+      setHelpOpen(false);
+      setStatus('Aplicativo instalado com sucesso.');
+      (window as any).__eijInstallPrompt=undefined;
+    };
 
+    takePrompt();
+    window.addEventListener('eij-install-ready',takePrompt);
     window.addEventListener('beforeinstallprompt',before);
+    window.addEventListener('eij-app-installed',done);
     window.addEventListener('appinstalled',done);
-    return()=>{window.removeEventListener('beforeinstallprompt',before);window.removeEventListener('appinstalled',done)};
+    return()=>{
+      window.removeEventListener('eij-install-ready',takePrompt);
+      window.removeEventListener('beforeinstallprompt',before);
+      window.removeEventListener('eij-app-installed',done);
+      window.removeEventListener('appinstalled',done);
+    };
   },[]);
 
-  if(installed||(!isMobile&&!deferred))return null;
+  if(installed||(!isAndroid&&!isIos&&!deferred))return null;
 
   const install=async()=>{
     setStatus('');
-    if(deferred){
+
+    if(isIos){
+      setHelpOpen(true);
+      return;
+    }
+
+    const livePrompt=deferred||((window as any).__eijInstallPrompt as PwaInstallPromptEvent|undefined)||null;
+    if(livePrompt){
       try{
-        await deferred.prompt();
-        const choice=deferred.userChoice?await deferred.userChoice:null;
+        await livePrompt.prompt();
+        const choice=livePrompt.userChoice?await livePrompt.userChoice:null;
         if(choice?.outcome==='accepted'){
           setStatus('Instalação iniciada.');
         }else if(choice?.outcome==='dismissed'){
-          setStatus('Instalação cancelada. Você pode tentar novamente pelo menu do navegador.');
+          setStatus('Instalação cancelada.');
         }
       }catch{
-        setHelpOpen(true);
+        setStatus('Não foi possível abrir o instalador agora. Tente novamente em alguns segundos.');
       }finally{
         setDeferred(null);
+        (window as any).__eijInstallPrompt=undefined;
       }
       return;
     }
+
+    if(isAndroid&&isChrome){
+      setStatus('Preparando o instalador do Android. Continue nesta página por alguns segundos e toque em Instalar novamente.');
+      return;
+    }
+
     setHelpOpen(true);
   };
 
-  return <div className={compact?'pwa-install compact':'pwa-install'}>
-    <button type="button" className={compact?'pwa-install-button nav':'pwa-install-button link-btn'} onClick={install}>
-      <Download size={18}/> Instalar aplicativo
+  const openInChrome=()=>{
+    const target='intent://evangelizacao.dynv6.net/#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=https%3A%2F%2Fevangelizacao.dynv6.net%2F;end';
+    window.location.href=target;
+  };
+
+  return <div className="pwa-install pwa-install-floating">
+    <button type="button" className={deferred?'pwa-install-button ready':'pwa-install-button'} onClick={install} aria-label="Instalar aplicativo" title="Instalar aplicativo">
+      <Download size={15}/><span>{deferred?'Instalar':'Instalar app'}</span>
     </button>
-    {status&&<small className="pwa-install-status">{status}</small>}
+    {status&&<div className="pwa-mini-status">{status}</div>}
     {helpOpen&&<Modal title={isIos?'Instalar no iPhone / iPad':'Instalar no Android'} close={()=>setHelpOpen(false)}>
       <div className="pwa-guide">
         <div className="pwa-guide-icon"><Smartphone size={34}/></div>
         {isIos?<>
-          <p>Para instalar como aplicativo no iPhone ou iPad:</p>
+          <p>No iPhone/iPad a Apple não permite instalação automática por um botão do site.</p>
           <ol>
-            <li>Toque no botão <b>Compartilhar</b> <Share2 size={16}/>.</li>
+            <li>Toque em <b>Compartilhar</b> <Share2 size={16}/>.</li>
             <li>Escolha <b>Adicionar à Tela de Início</b>.</li>
             <li>Confirme em <b>Adicionar</b>.</li>
           </ol>
-          <small>Depois, abra pelo ícone “Evangelização” na tela inicial. O sistema abrirá em modo aplicativo, sem a barra normal do navegador.</small>
+          <small>Depois abra pelo ícone “Evangelização”. O aplicativo continua 100% online.</small>
         </>:<>
-          <p>Seu navegador não exibiu o instalador automático. No Android:</p>
-          <ol>
-            <li>Abra o menu <b>⋮</b> do navegador.</li>
-            <li>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li>
-            <li>Confirme a instalação.</li>
-          </ol>
-          <small>No Chrome compatível, este botão normalmente abre o instalador do Android automaticamente.</small>
+          <p>Para instalar como aplicativo no seu Android, abra este endereço pelo <b>Google Chrome</b>.</p>
+          <button type="button" className="primary pwa-open-chrome" onClick={openInChrome}>Abrir no Google Chrome</button>
+          <small>Depois permaneça alguns segundos na página. Assim que o Chrome liberar a instalação, o botão pequeno “Instalar” abrirá a confirmação do Android.</small>
         </>}
       </div>
     </Modal>}

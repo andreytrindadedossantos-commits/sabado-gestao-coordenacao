@@ -306,3 +306,29 @@ O aplicativo instalável voltou, agora em modo **online-first**, sem cache dos d
 
 ### Importante
 Esta versão não armazena uma cópia offline do sistema. O service worker é propositalmente online-only e apaga caches antigos de tentativas anteriores de PWA para reduzir problemas de versão desatualizada.
+
+
+## V54 — Botão pequeno no celular + PWA 100% online
+
+- Removido o botão grande de instalação da tela de login e do menu.
+- Adicionado um pequeno botão flutuante **Instalar** no celular, adaptado a Android e iOS.
+- Android: usa o instalador nativo do navegador quando disponível.
+- iPhone/iPad: abre as instruções de **Compartilhar → Adicionar à Tela de Início**.
+- O Service Worker está em modo **network-only** e não grava páginas ou dados em Cache Storage.
+- Caches antigos das tentativas anteriores de PWA são apagados durante instalação/ativação do novo Service Worker.
+- Sem internet, o aplicativo não funciona como backup offline: ele depende do site e do Supabase online.
+
+
+## V55 — PWA online ajustado para Redmi A3 / Android
+
+- O evento de instalação do Android agora é capturado **antes do React carregar**, reduzindo a chance de o Chrome perder o `beforeinstallprompt`.
+- O Service Worker é registrado imediatamente e continua **100% network-only**.
+- Nenhuma página, dado ou resposta do Supabase é armazenada para uso offline.
+- Caches antigos são apagados na instalação/ativação do Service Worker.
+- No primeiro acesso Android/Chrome pode ocorrer **uma única atualização automática** para a página ficar controlada pelo Service Worker.
+- O botão pequeno fica no canto inferior da tela.
+- Quando o Chrome disponibiliza o instalador, o botão fica azul e abre diretamente a confirmação do Android.
+- Se o navegador não for Chrome, o sistema oferece **Abrir no Google Chrome**.
+- No iPhone/iPad permanece o fluxo obrigatório da Apple: **Compartilhar → Adicionar à Tela de Início**.
+
+Observação: o Chrome pode só liberar o prompt depois de alguma interação e alguns segundos de permanência na página. Isso é uma regra do próprio navegador, não do sistema.

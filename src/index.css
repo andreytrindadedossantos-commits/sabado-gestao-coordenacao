@@ -1125,3 +1125,17 @@ html.dark .access-instructions span{color:#fff!important}
   .role-choice-buttons{grid-template-columns:1fr}
   .role-choice{min-height:88px}
 }
+
+
+/* V50 — orientação do primeiro acesso */
+.first-access-help{
+  padding:11px 12px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--surface-soft);
+  color:var(--text);
+  font-size:13px;
+  line-height:1.5;
+}
+.first-access-help b,.first-access-help strong{font-weight:700}
+html.dark .first-access-help{color:#fff}

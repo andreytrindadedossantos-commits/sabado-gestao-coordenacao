@@ -260,3 +260,13 @@ Corrigido o registro de auditoria para também gravar:
 A auditoria continua registrando alunos, escalas, chamadas, reuniões e eventos.
 
 A correção já foi aplicada no Supabase. Registros criados antes desta correção não são gerados retroativamente; novas ações passam a aparecer normalmente.
+
+
+## V50 — Primeiro acesso com senha de 6 dígitos
+
+- Adicionada orientação clara na tela inicial sobre como criar a senha.
+- No primeiro acesso, a nova senha deve possuir exatamente 6 dígitos numéricos.
+- Após clicar em **Criar senha** e salvar com sucesso, o sistema volta automaticamente para a tela de login.
+- O campo de usuário permanece preenchido e os campos de senha são limpos.
+- O usuário então informa a senha criada e clica em **Entrar**.
+- O acesso de 30 dias continua igual após o login.

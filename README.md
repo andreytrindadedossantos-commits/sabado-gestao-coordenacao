@@ -332,3 +332,12 @@ Esta versão não armazena uma cópia offline do sistema. O service worker é pr
 - No iPhone/iPad permanece o fluxo obrigatório da Apple: **Compartilhar → Adicionar à Tela de Início**.
 
 Observação: o Chrome pode só liberar o prompt depois de alguma interação e alguns segundos de permanência na página. Isso é uma regra do próprio navegador, não do sistema.
+
+
+## V56 — instalação corrigida no Redmi A3
+
+- O botão **Instalar app** nunca mais fica sem resposta visual.
+- Se o Android liberar o prompt, abre a instalação nativa.
+- Se estiver em navegador interno/WebView, mostra **Abrir no Google Chrome**.
+- Se já estiver no Chrome sem prompt, oferece **Verificar instalação agora** e instruções pelo menu `⋮`.
+- Continua 100% online/network-only, sem cache offline.

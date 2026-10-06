@@ -1256,3 +1256,9 @@ html.dark .pwa-guide small{color:#fff!important}
 @media(display-mode:standalone){
   .pwa-install-floating{display:none!important}
 }
+
+
+/* V56 — botão de instalação sempre responde ao toque */
+.pwa-install-button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.pwa-open-chrome{min-height:48px!important;width:100%!important}
+.pwa-guide .pwa-open-chrome + small{display:block;margin-top:2px}

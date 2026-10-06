@@ -316,8 +316,10 @@ function InstallApp(){
   const[installed,setInstalled]=useState(false);
   const[isAndroid,setIsAndroid]=useState(false);
   const[isIos,setIsIos]=useState(false);
-  const[isChrome,setIsChrome]=useState(false);
+  const[isRealChrome,setIsRealChrome]=useState(false);
+  const[isWebView,setIsWebView]=useState(false);
   const[status,setStatus]=useState('');
+  const[checking,setChecking]=useState(false);
 
   useEffect(()=>{
     const standalone=window.matchMedia('(display-mode: standalone)').matches||(window.navigator as any).standalone===true;
@@ -326,17 +328,17 @@ function InstallApp(){
     const ua=navigator.userAgent||'';
     const ios=/iPad|iPhone|iPod/i.test(ua)||((navigator as any).platform==='MacIntel'&&(navigator as any).maxTouchPoints>1);
     const android=/Android/i.test(ua);
-    const chrome=/Chrome\//i.test(ua)&&!/EdgA|OPR|SamsungBrowser|Firefox/i.test(ua);
+    const webview=/;\s*wv\)|\bwv\b|Version\/4\.0.*Chrome\/|FBAN|FBAV|Instagram|WhatsApp|Line\//i.test(ua);
+    const chrome=android&&/Chrome\//i.test(ua)&&!/EdgA|OPR|SamsungBrowser|Firefox/i.test(ua)&&!webview;
+
     setIsIos(ios);
     setIsAndroid(android);
-    setIsChrome(chrome);
+    setIsWebView(webview);
+    setIsRealChrome(chrome);
 
     const takePrompt=()=>{
       const prompt=(window as any).__eijInstallPrompt as PwaInstallPromptEvent|undefined;
-      if(prompt){
-        setDeferred(prompt);
-        setStatus('');
-      }
+      if(prompt){setDeferred(prompt);setStatus('')}
     };
     const before=(event:Event)=>{
       event.preventDefault();
@@ -345,10 +347,7 @@ function InstallApp(){
       setStatus('');
     };
     const done=()=>{
-      setInstalled(true);
-      setDeferred(null);
-      setHelpOpen(false);
-      setStatus('Aplicativo instalado com sucesso.');
+      setInstalled(true);setDeferred(null);setHelpOpen(false);setStatus('Aplicativo instalado com sucesso.');
       (window as any).__eijInstallPrompt=undefined;
     };
 
@@ -367,44 +366,55 @@ function InstallApp(){
 
   if(installed||(!isAndroid&&!isIos&&!deferred))return null;
 
-  const install=async()=>{
-    setStatus('');
-
-    if(isIos){
-      setHelpOpen(true);
-      return;
-    }
-
-    const livePrompt=deferred||((window as any).__eijInstallPrompt as PwaInstallPromptEvent|undefined)||null;
-    if(livePrompt){
-      try{
-        await livePrompt.prompt();
-        const choice=livePrompt.userChoice?await livePrompt.userChoice:null;
-        if(choice?.outcome==='accepted'){
-          setStatus('Instalação iniciada.');
-        }else if(choice?.outcome==='dismissed'){
-          setStatus('Instalação cancelada.');
-        }
-      }catch{
-        setStatus('Não foi possível abrir o instalador agora. Tente novamente em alguns segundos.');
-      }finally{
-        setDeferred(null);
-        (window as any).__eijInstallPrompt=undefined;
-      }
-      return;
-    }
-
-    if(isAndroid&&isChrome){
-      setStatus('Preparando o instalador do Android. Continue nesta página por alguns segundos e toque em Instalar novamente.');
-      return;
-    }
-
-    setHelpOpen(true);
+  const openInChrome=()=>{
+    const fallback=encodeURIComponent('https://evangelizacao.dynv6.net/');
+    window.location.href=`intent://evangelizacao.dynv6.net/#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${fallback};end`;
   };
 
-  const openInChrome=()=>{
-    const target='intent://evangelizacao.dynv6.net/#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=https%3A%2F%2Fevangelizacao.dynv6.net%2F;end';
-    window.location.href=target;
+  const runPrompt=async(prompt:PwaInstallPromptEvent)=>{
+    try{
+      await prompt.prompt();
+      const choice=prompt.userChoice?await prompt.userChoice:null;
+      if(choice?.outcome==='accepted')setStatus('Instalação iniciada.');
+      else if(choice?.outcome==='dismissed')setStatus('Instalação cancelada.');
+    }catch{
+      setStatus('Não foi possível abrir o instalador. Tente novamente.');
+    }finally{
+      setDeferred(null);
+      (window as any).__eijInstallPrompt=undefined;
+    }
+  };
+
+  const waitForPrompt=async()=>{
+    setChecking(true);setStatus('Verificando se o Chrome liberou a instalação...');
+    try{
+      if('serviceWorker' in navigator){
+        await Promise.race([navigator.serviceWorker.ready,new Promise(resolve=>setTimeout(resolve,2500))]);
+      }
+      let prompt=(window as any).__eijInstallPrompt as PwaInstallPromptEvent|undefined;
+      if(prompt){setHelpOpen(false);await runPrompt(prompt);return}
+
+      await new Promise<void>((resolve)=>{
+        let finished=false;
+        const ready=()=>{if(finished)return;finished=true;window.removeEventListener('eij-install-ready',ready);resolve()};
+        window.addEventListener('eij-install-ready',ready);
+        setTimeout(ready,3500);
+      });
+
+      prompt=(window as any).__eijInstallPrompt as PwaInstallPromptEvent|undefined;
+      if(prompt){setHelpOpen(false);await runPrompt(prompt)}
+      else setStatus('O Chrome ainda não liberou o instalador. Use ⋮ → Instalar app ou Adicionar à tela inicial.');
+    }finally{setChecking(false)}
+  };
+
+  const install=async()=>{
+    setStatus('');
+    if(isIos){setHelpOpen(true);return}
+
+    const livePrompt=deferred||((window as any).__eijInstallPrompt as PwaInstallPromptEvent|undefined)||null;
+    if(livePrompt){await runPrompt(livePrompt);return}
+
+    setHelpOpen(true);
   };
 
   return <div className="pwa-install pwa-install-floating">
@@ -416,17 +426,27 @@ function InstallApp(){
       <div className="pwa-guide">
         <div className="pwa-guide-icon"><Smartphone size={34}/></div>
         {isIos?<>
-          <p>No iPhone/iPad a Apple não permite instalação automática por um botão do site.</p>
+          <p>No iPhone/iPad a instalação é controlada pelo iOS:</p>
           <ol>
+            <li>Abra este site no <b>Safari</b>.</li>
             <li>Toque em <b>Compartilhar</b> <Share2 size={16}/>.</li>
             <li>Escolha <b>Adicionar à Tela de Início</b>.</li>
             <li>Confirme em <b>Adicionar</b>.</li>
           </ol>
-          <small>Depois abra pelo ícone “Evangelização”. O aplicativo continua 100% online.</small>
-        </>:<>
-          <p>Para instalar como aplicativo no seu Android, abra este endereço pelo <b>Google Chrome</b>.</p>
+          <small>O aplicativo continuará 100% online. Sem internet, os dados do sistema não ficam disponíveis.</small>
+        </>:isWebView||!isRealChrome?<>
+          <p>Este navegador não permite instalar o aplicativo diretamente. No Redmi A3, abra o sistema no <b>Google Chrome</b>.</p>
           <button type="button" className="primary pwa-open-chrome" onClick={openInChrome}>Abrir no Google Chrome</button>
-          <small>Depois permaneça alguns segundos na página. Assim que o Chrome liberar a instalação, o botão pequeno “Instalar” abrirá a confirmação do Android.</small>
+          <small>Quando abrir no Chrome, aguarde alguns segundos e toque novamente em <b>Instalar app</b>.</small>
+        </>:<>
+          <p>Você já está no Google Chrome, mas o Android ainda não disponibilizou o instalador automático.</p>
+          <button type="button" className="primary pwa-open-chrome" disabled={checking} onClick={waitForPrompt}>{checking?'Verificando...':'Verificar instalação agora'}</button>
+          <ol>
+            <li>Se o instalador aparecer, toque em <b>Instalar</b>.</li>
+            <li>Se não aparecer, toque no menu <b>⋮</b> do Chrome.</li>
+            <li>Escolha <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li>
+          </ol>
+          <small>O sistema é 100% online. O PWA não mantém cópia offline dos seus dados.</small>
         </>}
       </div>
     </Modal>}

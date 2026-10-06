@@ -221,3 +221,11 @@ A V45 permite que o mesmo cadastro tenha:
 - acesso administrativo separado pelo botão **Acesso do Super Administrador**.
 
 A correção correspondente também foi aplicada no banco Supabase.
+
+
+## V46 — Permissões: botão Confirmar corrigido
+
+- O modal de permissões agora tem rolagem própria.
+- O título permanece visível no topo.
+- O botão **Confirmar e salvar permissões** fica fixo na parte inferior do modal.
+- Funciona em computador e celular, mesmo quando a lista de permissões é maior que a altura da tela.

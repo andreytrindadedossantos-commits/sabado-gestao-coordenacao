@@ -1043,3 +1043,64 @@ html.dark .access-instructions span{color:#fff!important}
   .user-create-form{grid-template-columns:1fr}
   .teacher-login input{font-size:16px}
 }
+
+
+/* V46 — modal de permissões com botão de confirmação sempre acessível */
+.modal-backdrop{
+  overflow:hidden!important;
+}
+
+.modal-card{
+  max-height:calc(100dvh - 32px)!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+
+.modal-title{
+  position:sticky;
+  top:-18px;
+  z-index:12;
+  margin:-18px -18px 0;
+  padding:18px 18px 12px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+}
+
+.permission-save-button{
+  position:sticky!important;
+  bottom:-18px;
+  z-index:12;
+  margin:4px -18px -18px!important;
+  width:calc(100% + 36px)!important;
+  min-height:58px!important;
+  border-radius:0 0 15px 15px!important;
+  box-shadow:0 -8px 18px rgba(0,0,0,.12)!important;
+}
+
+@media(max-width:700px){
+  .modal-backdrop{
+    place-items:stretch!important;
+    padding:8px!important;
+  }
+
+  .modal-card{
+    width:100%!important;
+    max-height:calc(100dvh - 16px)!important;
+    align-self:center;
+    padding:14px!important;
+  }
+
+  .modal-title{
+    top:-14px;
+    margin:-14px -14px 0;
+    padding:14px 14px 10px;
+  }
+
+  .permission-save-button{
+    bottom:-14px;
+    margin:4px -14px -14px!important;
+    width:calc(100% + 28px)!important;
+    min-height:60px!important;
+  }
+}

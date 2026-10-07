@@ -1,0 +1,6 @@
+V71
+- Notificações marcadas como lidas somem imediatamente.
+- Notificações excluídas não voltam após atualizar/reabrir o sistema no mesmo navegador.
+- O painel passa a mostrar apenas notificações novas.
+- Adicionado botão individual ✓ para marcar uma notificação como lida.
+- Marcar todas como lidas oculta todas as notificações atuais.

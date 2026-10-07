@@ -282,8 +282,9 @@ function App(){
   const personal=[['Minha Segurança','security',ShieldCheck]] as const;
   const extra=admin?[['Auditoria','audit',History],['Configurações','settings',Settings],['Administração','admin',UserCog]] as const:[];
 
-  const visibleNotifications=data.notifications.filter(n=>!hiddenNotices.includes(n.id));
-  const unread=visibleNotifications.filter(n=>!read.includes(n.id)).length;
+  // Mostra somente notificações realmente novas. As que foram lidas ou excluídas permanecem ocultas após recarregar a página.
+  const visibleNotifications=data.notifications.filter(n=>!hiddenNotices.includes(n.id)&&!read.includes(n.id));
+  const unread=visibleNotifications.length;
   const toast=(s:string)=>setMsg(s);
 
   const enableDeviceNotifications=async()=>{
@@ -291,18 +292,31 @@ function App(){
     const permission=await Notification.requestPermission();
     toast(permission==='granted'?'Notificações do dispositivo ativadas.':'Permissão de notificações não concedida.');
   };
+  const markNoticeRead=(id:string)=>{
+    const next=[...new Set([...read,id])];
+    setRead(next);
+    localStorage.setItem('readNotices',JSON.stringify(next));
+    toast('Notificação marcada como lida.');
+  };
   const deleteNotice=(id:string)=>{
-    const next=[...new Set([...hiddenNotices,id])];
-    setHiddenNotices(next);
-    localStorage.setItem('hiddenNotices',JSON.stringify(next));
-    toast('Notificação removida para este usuário.');
+    const hidden=[...new Set([...hiddenNotices,id])];
+    const readNext=[...new Set([...read,id])];
+    setHiddenNotices(hidden);
+    setRead(readNext);
+    localStorage.setItem('hiddenNotices',JSON.stringify(hidden));
+    localStorage.setItem('readNotices',JSON.stringify(readNext));
+    toast('Notificação excluída. Ela não será exibida novamente.');
   };
   const clearNotices=()=>{
-    if(!visibleNotifications.length||!confirm('Remover todas as notificações da sua tela?'))return;
-    const next=[...new Set([...hiddenNotices,...visibleNotifications.map(n=>n.id)])];
-    setHiddenNotices(next);
-    localStorage.setItem('hiddenNotices',JSON.stringify(next));
-    toast('Notificações removidas para este usuário.');
+    if(!visibleNotifications.length||!confirm('Excluir todas as notificações exibidas?'))return;
+    const ids=visibleNotifications.map(n=>n.id);
+    const hidden=[...new Set([...hiddenNotices,...ids])];
+    const readNext=[...new Set([...read,...ids])];
+    setHiddenNotices(hidden);
+    setRead(readNext);
+    localStorage.setItem('hiddenNotices',JSON.stringify(hidden));
+    localStorage.setItem('readNotices',JSON.stringify(readNext));
+    toast('Notificações excluídas. Somente novas notificações serão exibidas.');
   };
 
   const respond=async(status:'yes'|'no')=>{
@@ -343,7 +357,7 @@ function App(){
   const doSignOut=async()=>{const token=localStorage.getItem(CUSTOM_SESSION_KEY);if(token)await supabase.rpc('sabado_username_logout',{p_token:token});localStorage.removeItem(CUSTOM_SESSION_KEY);localStorage.removeItem(LOGIN_VALIDITY_KEY);await supabase.auth.signOut();setAdmin(false);setCurrentUser(null);setSessionEmail('');setData(empty);setPage('home')};
 
   return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><div className="brand-logo"><BookOpen size={26}/><span className="brand-heart">♥</span></div><div className="brand-copy"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...personal,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}<div className="user-session-card"><ShieldCheck size={16}/><div><b>{currentUser?.name||sessionEmail}</b><small>{admin?'Administrador':'Professor'}</small></div></div></aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><button className="top-icon-btn theme-toggle" title={dark?'Usar tema claro':'Usar tema cinza escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button><button className="ghost-btn" onClick={doSignOut}>Sair</button></div></header>
-  {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações</b><div className="notice-tools"><button className="read-all" onClick={()=>{const ids=visibleNotifications.map(n=>n.id);const next=[...new Set([...read,...ids])];setRead(next);localStorage.setItem('readNotices',JSON.stringify(next))}}>✓ Marcar todas como lidas</button><button className="read-all" onClick={enableDeviceNotifications}>🔔 Ativar no dispositivo</button>{visibleNotifications.length>0&&<button className="delete-notifications-btn" onClick={clearNotices}><Trash2 size={15}/> Excluir notificações</button>}<button className="icon-close" onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div></div>{visibleNotifications.map(n=><div className={read.includes(n.id)?'notice-item read':'notice-item'} key={n.id}><div className="notice-item-head"><b>{n.title}</b><button className="notice-delete" title="Excluir esta notificação" onClick={()=>deleteNotice(n.id)}><Trash2 size={15}/></button></div><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}</div>)}{!visibleNotifications.length&&<Empty text="Nenhuma notificação ainda."/>}</div>}
+  {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações novas</b><div className="notice-tools"><button className="read-all" onClick={()=>{const ids=visibleNotifications.map(n=>n.id);const next=[...new Set([...read,...ids])];setRead(next);localStorage.setItem('readNotices',JSON.stringify(next));toast(ids.length?'Todas foram marcadas como lidas.':'Nenhuma notificação nova.')}}>✓ Marcar todas como lidas</button><button className="read-all" onClick={enableDeviceNotifications}>🔔 Ativar no dispositivo</button>{visibleNotifications.length>0&&<button className="delete-notifications-btn" onClick={clearNotices}><Trash2 size={15}/> Excluir notificações</button>}<button className="icon-close" onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div></div>{visibleNotifications.map(n=><div className="notice-item" key={n.id}><div className="notice-item-head"><b>{n.title}</b><div className="notice-item-actions"><button className="notice-read" title="Marcar como lida" onClick={()=>markNoticeRead(n.id)}>✓</button><button className="notice-delete" title="Excluir esta notificação" onClick={()=>deleteNotice(n.id)}><Trash2 size={15}/></button></div></div><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}</div>)}{!visibleNotifications.length&&<Empty text="Nenhuma notificação nova."/>}</div>}
   {meetingNotice&&<Modal title="Confirmar participação" close={()=>setMeetingNotice(null)}>{admin?<><label>Responder como</label><select value={rsvpUserId} onChange={e=>setRsvpUserId(e.target.value)}><option value="">Selecione o nome</option>{data.users.filter(u=>['Professor','Administrador'].includes(u.role)&&u.status!=='Inativo').sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(u=><option value={u.id} key={u.id}>{u.name}</option>)}</select></>:<div className="logged-response"><ShieldCheck size={18}/><span>Respondendo como <b>{currentUser?.name}</b></span></div>}<div className="rsvp-buttons"><button className="yes-rsvp" onClick={()=>respond('yes')}>✅ Vou participar</button><button className="no-rsvp" onClick={()=>respond('no')}>❌ Não poderei participar</button></div></Modal>}
   {msg&&<div className="toast">{msg}</div>}<section className="content">{content}</section><footer>© 2026 Evangelização Infanto Juvenil · Todos os direitos reservados.</footer></main></div>
 }

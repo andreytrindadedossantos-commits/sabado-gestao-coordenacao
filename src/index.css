@@ -1588,3 +1588,10 @@ html.dark .login-page .login-card{
     width:min(326px,calc(100vw - 20px))!important;
   }
 }
+
+
+/* V71 — ações de notificações */
+.notice-item-actions{display:flex;align-items:center;gap:6px}
+.notice-read{width:30px;height:30px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:#16803d;display:grid;place-items:center;font-weight:900;cursor:pointer}
+.notice-read:hover{background:rgba(22,128,61,.10);border-color:#16803d}
+html.dark .notice-read{background:rgba(255,255,255,.04);color:#70dc92}

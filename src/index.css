@@ -1595,3 +1595,29 @@ html.dark .login-page .login-card{
 .notice-read{width:30px;height:30px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:#16803d;display:grid;place-items:center;font-weight:900;cursor:pointer}
 .notice-read:hover{background:rgba(22,128,61,.10);border-color:#16803d}
 html.dark .notice-read{background:rgba(255,255,255,.04);color:#70dc92}
+
+
+/* V72 — correção dos botões Sim/Não da chamada */
+.attendance-actions{display:flex;gap:8px;align-items:center}
+.att .yes,.att .no{transition:background-color .15s ease,border-color .15s ease,color .15s ease,transform .08s ease}
+.att .yes:active,.att .no:active{transform:scale(.97)}
+.att .yes.selected,
+html.dark .att .yes.selected{
+  background:#16844a !important;
+  border-color:#16844a !important;
+  color:#ffffff !important;
+  box-shadow:0 0 0 2px rgba(22,132,74,.18) !important;
+}
+.att .no.selected,
+html.dark .att .no.selected{
+  background:#c93636 !important;
+  border-color:#c93636 !important;
+  color:#ffffff !important;
+  box-shadow:0 0 0 2px rgba(201,54,54,.18) !important;
+}
+.att .yes:not(.selected):hover{border-color:#16844a !important}
+.att .no:not(.selected):hover{border-color:#c93636 !important}
+@media(max-width:700px){
+  .attendance-actions{width:100%}
+  .attendance-actions .yes,.attendance-actions .no{flex:1;min-width:0!important}
+}

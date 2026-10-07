@@ -1,0 +1,6 @@
+V72
+- Corrigidos os botões Sim/Não da chamada.
+- Sim agora fica verde ao selecionar.
+- Não agora fica vermelho ao selecionar.
+- Corrigido conflito do tema escuro que escondia a cor selecionada.
+- Estado da marcação usa atualização funcional para evitar falhas em cliques consecutivos.

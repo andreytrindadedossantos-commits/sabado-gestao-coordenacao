@@ -15,6 +15,35 @@ const TRUSTED_2FA_UNTIL_KEY='sabado_2fa_trusted_until';
 const LOGIN_VALIDITY_MS=90*24*60*60*1000;
 const renewLoginValidity=()=>localStorage.setItem(LOGIN_VALIDITY_KEY,String(Date.now()+LOGIN_VALIDITY_MS));
 const loginExpired=()=>{const until=Number(localStorage.getItem(LOGIN_VALIDITY_KEY)||0);return until>0&&Date.now()>until};
+const getDeviceInfo=()=>{
+  const ua=navigator.userAgent||'';
+  let browser='Navegador';
+  if(/Edg\//.test(ua))browser='Microsoft Edge';
+  else if(/OPR\//.test(ua))browser='Opera';
+  else if(/Chrome\//.test(ua)&&!/Edg\//.test(ua))browser='Chrome';
+  else if(/Firefox\//.test(ua))browser='Firefox';
+  else if(/Safari\//.test(ua)&&/Version\//.test(ua))browser='Safari';
+
+  let platform='Dispositivo';
+  if(/Android/i.test(ua))platform='Android';
+  else if(/iPhone|iPad|iPod/i.test(ua))platform='iOS';
+  else if(/Windows/i.test(ua))platform='Windows';
+  else if(/Macintosh|Mac OS X/i.test(ua))platform='macOS';
+  else if(/Linux/i.test(ua))platform='Linux';
+
+  let device=platform;
+  if(/Android/i.test(ua)){
+    const m=ua.match(/Android\s[^;)]*;\s*([^;)]+?)(?:\s+Build\/[^;)]+)?[;)]/i);
+    if(m?.[1]){
+      const model=m[1].replace(/\bwv\b/ig,'').trim();
+      if(model&&!/^[a-z]{2}[-_][A-Z]{2}$/i.test(model))device=model;
+    }
+  }else if(/iPhone/i.test(ua))device='iPhone';
+  else if(/iPad/i.test(ua))device='iPad';
+  else if(/Windows|Macintosh|Linux/i.test(ua))device='Computador';
+
+  return {device_name:device,browser_name:browser,platform_name:platform};
+};
 const months=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const celebrationCards=[['Março','Dia da Mulher'],['Abril','Páscoa'],['Maio','Dia das Mães'],['Agosto','Dia dos Pais'],['Outubro','Dia das Crianças'],['Dezembro','Natal']];
 
@@ -27,6 +56,7 @@ type EventItem={id:string;title:string;date:string;type:string;time:string;notes
 type Meeting={id:string;title:string;date:string;time:string;location:string;notes:string};
 type Response={id:string;meetingId:string;userId:string;userName:string;status:'yes'|'no'};
 type Notice={id:string;title:string;body:string;date:string;kind:string;meetingId?:string};
+type AuthorizedDevice={id:string;device_name:string;browser_name:string;platform_name:string;created_at:string;last_seen_at:string;expires_at:string;is_current:boolean;active_sessions:number};
 type AuditLog={
  id:string;action:'insert'|'update'|'delete';entityType:string;entityName:string;recordId:string;
  actorName:string;actorEmail:string;createdAt:string;beforeData:any;afterData:any
@@ -144,7 +174,13 @@ function App(){
 
     if(!localStorage.getItem(TRUSTED_2FA_DEVICE_KEY)){
       try{
-        const{data:trusted}=await supabase.rpc('sabado_trust_current_device',{p_token:token});
+        const deviceInfo=getDeviceInfo();
+        const{data:trusted}=await supabase.rpc('sabado_trust_current_device_v2',{
+          p_token:token,
+          p_device_name:deviceInfo.device_name,
+          p_browser_name:deviceInfo.browser_name,
+          p_platform_name:deviceInfo.platform_name
+        });
         if(trusted?.ok&&trusted?.trusted_device_token){
           localStorage.setItem(TRUSTED_2FA_DEVICE_KEY,trusted.trusted_device_token);
           if(trusted.trusted_device_expires_at){
@@ -348,7 +384,14 @@ function LoginPage({adminOnly:_adminOnly,onSuccess:_onSuccess}:{adminOnly:boolea
     if(!/^\d{6}$/.test(code))return setMsg('Informe o código de 6 números do aplicativo autenticador.');
     setPending(true);setMsg('');
     try{
-      const{data,error}=await supabase.rpc('sabado_username_2fa_verify',{p_challenge:twoFactor.challenge_token,p_code:code});
+      const deviceInfo=getDeviceInfo();
+      const{data,error}=await supabase.rpc('sabado_username_2fa_verify_v2',{
+        p_challenge:twoFactor.challenge_token,
+        p_code:code,
+        p_device_name:deviceInfo.device_name,
+        p_browser_name:deviceInfo.browser_name,
+        p_platform_name:deviceInfo.platform_name
+      });
       if(error)return setMsg(error.message||'Não foi possível validar o código.');
       if(!data?.ok)return setMsg(data?.error||'Código inválido.');
 
@@ -390,9 +433,17 @@ function LoginPage({adminOnly:_adminOnly,onSuccess:_onSuccess}:{adminOnly:boolea
         trustedDeviceToken='';
       }
 
+      const deviceInfo=getDeviceInfo();
       const{data,error}=mode==='signup'
         ?await supabase.rpc('sabado_username_register',{p_username:clean,p_password:password})
-        :await supabase.rpc('sabado_username_login_v2',{p_username:clean,p_password:password,p_device_token:trustedDeviceToken});
+        :await supabase.rpc('sabado_username_login_v3',{
+          p_username:clean,
+          p_password:password,
+          p_device_token:trustedDeviceToken,
+          p_device_name:deviceInfo.device_name,
+          p_browser_name:deviceInfo.browser_name,
+          p_platform_name:deviceInfo.platform_name
+        });
       if(error)return setMsg(error.message||'Não foi possível concluir o acesso.');
       if(data?.error)return setMsg(data.error);
 
@@ -777,11 +828,38 @@ function MySecurityPage({currentUser,toast}:{currentUser:UserRec|null;toast:(s:s
   const[custom,setCustom]=useState(false);
   const[loading,setLoading]=useState(true);
   const[saving,setSaving]=useState(false);
+  const[devices,setDevices]=useState<AuthorizedDevice[]>([]);
+  const[devicesLoading,setDevicesLoading]=useState(true);
+
+  const loadDevices=async()=>{
+    setDevicesLoading(true);
+    try{
+      const deviceToken=localStorage.getItem(TRUSTED_2FA_DEVICE_KEY)||'';
+      if(deviceToken){
+        const info=getDeviceInfo();
+        await supabase.rpc('sabado_touch_my_device',{
+          p_device_token:deviceToken,
+          p_device_name:info.device_name,
+          p_browser_name:info.browser_name,
+          p_platform_name:info.platform_name
+        });
+      }
+      const{data,error}=await supabase.rpc('sabado_list_my_devices',{p_device_token:deviceToken});
+      if(error)return toast(error.message);
+      if(!data?.ok)return toast(data?.error||'Não foi possível carregar os dispositivos.');
+      setDevices(Array.isArray(data.devices)?data.devices:[]);
+    }finally{
+      setDevicesLoading(false);
+    }
+  };
 
   const load=async()=>{
     setLoading(true);
     try{
-      const{data,error}=await supabase.rpc('sabado_get_my_2fa_interval');
+      const[{data,error}]=await Promise.all([
+        supabase.rpc('sabado_get_my_2fa_interval'),
+        loadDevices()
+      ]);
       if(error)return toast(error.message);
       if(!data?.ok)return toast(data?.error||'Não foi possível carregar sua configuração.');
       setValue(Number(data.value||3));
@@ -828,6 +906,7 @@ function MySecurityPage({currentUser,toast}:{currentUser:UserRec|null;toast:(s:s
       setValue(Number(data.value||clean));
       setUnit(data.unit==='days'?'days':'months');
       setCustom(true);
+      await loadDevices();
       toast('Seu período de verificação em duas etapas foi salvo.');
     }finally{
       setSaving(false);
@@ -846,6 +925,7 @@ function MySecurityPage({currentUser,toast}:{currentUser:UserRec|null;toast:(s:s
       setValue(Number(data.value||defaultValue));
       setUnit(data.unit==='days'?'days':'months');
       setCustom(false);
+      await loadDevices();
       toast('Você voltou a usar o período padrão do sistema.');
     }finally{
       setSaving(false);
@@ -853,8 +933,57 @@ function MySecurityPage({currentUser,toast}:{currentUser:UserRec|null;toast:(s:s
   };
 
   const label=(v:number,u:'days'|'months')=>u==='days'?`${v} dia${v===1?'':'s'}`:`${v} ${v===1?'mês':'meses'}`;
+  const fmtAccess=(value:string)=>{
+    const d=new Date(value);
+    if(Number.isNaN(d.getTime()))return '';
+    const now=new Date();
+    const sameDay=d.toDateString()===now.toDateString();
+    const time=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    return sameDay?`Hoje às ${time}`:`${d.toLocaleDateString('pt-BR')} às ${time}`;
+  };
+  const fmtExpiry=(value:string)=>{
+    const d=new Date(value);
+    if(Number.isNaN(d.getTime()))return '';
+    return d.toLocaleDateString('pt-BR');
+  };
 
-  return <><Title t="Minha Segurança" s="Defina com que frequência este navegador deve solicitar novamente o código da verificação em duas etapas."/>
+  const revokeDevice=async(device:AuthorizedDevice)=>{
+    const text=device.is_current
+      ?'Encerrar o acesso deste dispositivo? Você será desconectado e precisará confirmar a verificação em duas etapas novamente neste navegador.'
+      :'Encerrar o acesso deste dispositivo? Ele precisará confirmar a verificação em duas etapas novamente.';
+    if(!confirm(text))return;
+    const{data,error}=await supabase.rpc('sabado_revoke_my_device',{p_device_id:device.id});
+    if(error)return toast(error.message);
+    if(!data?.ok)return toast(data?.error||'Não foi possível encerrar o acesso.');
+
+    if(device.is_current){
+      localStorage.removeItem(CUSTOM_SESSION_KEY);
+      localStorage.removeItem(LOGIN_VALIDITY_KEY);
+      localStorage.removeItem(TRUSTED_2FA_DEVICE_KEY);
+      localStorage.removeItem(TRUSTED_2FA_UNTIL_KEY);
+      await supabase.auth.signOut();
+      window.location.href='/';
+      return;
+    }
+
+    await loadDevices();
+    toast('Acesso do dispositivo encerrado.');
+  };
+
+  const revokeAll=async()=>{
+    if(!confirm('Encerrar todas as sessões e remover a autorização de todos os dispositivos? Todos precisarão confirmar a verificação em duas etapas novamente.'))return;
+    const{data,error}=await supabase.rpc('sabado_revoke_all_my_devices');
+    if(error)return toast(error.message);
+    if(!data?.ok)return toast(data?.error||'Não foi possível encerrar todas as sessões.');
+    localStorage.removeItem(CUSTOM_SESSION_KEY);
+    localStorage.removeItem(LOGIN_VALIDITY_KEY);
+    localStorage.removeItem(TRUSTED_2FA_DEVICE_KEY);
+    localStorage.removeItem(TRUSTED_2FA_UNTIL_KEY);
+    await supabase.auth.signOut();
+    window.location.href='/';
+  };
+
+  return <><Title t="Minha Segurança" s="Configure a verificação em duas etapas e acompanhe os aparelhos e navegadores autorizados na sua conta."/>
     <div className="panel my-security-panel">
       <div className="my-security-head"><ShieldCheck size={26}/><div><b>{currentUser?.name||'Minha conta'}</b><span>Verificação em duas etapas ativa</span></div></div>
 
@@ -879,8 +1008,33 @@ function MySecurityPage({currentUser,toast}:{currentUser:UserRec|null;toast:(s:s
         <small className="settings-help">Ao clicar em <strong>Sair</strong>, o navegador continua reconhecido até o seu prazo vencer. O código poderá ser solicitado antes se você limpar os dados do navegador, usar outro aparelho/navegador ou se o Administrador redefinir sua verificação em duas etapas.</small>
       </>}
     </div>
+
+    <div className="panel devices-panel">
+      <div className="devices-head">
+        <div><h3>Sessões e dispositivos conectados</h3><p>Veja onde sua conta está autorizada e encerre acessos que você não reconhece.</p></div>
+        <button className="edit-icon" onClick={loadDevices} disabled={devicesLoading}>Atualizar</button>
+      </div>
+
+      {devicesLoading?<div className="empty">Carregando dispositivos...</div>:devices.length? <div className="device-list">
+        {devices.map(device=><div className={'device-card '+(device.is_current?'current':'')} key={device.id}>
+          <div className="device-icon"><Smartphone size={22}/></div>
+          <div className="device-info">
+            <div className="device-title"><b>{device.browser_name||'Navegador'} · {device.device_name||device.platform_name||'Dispositivo'}</b>{device.is_current&&<span>Este dispositivo</span>}</div>
+            <small>{device.platform_name||'Plataforma não identificada'} · Último acesso: {fmtAccess(device.last_seen_at)}</small>
+            <small>Autorizado até {fmtExpiry(device.expires_at)} · {Number(device.active_sessions||0)>0?'Sessão ativa':'Sem sessão ativa'}</small>
+          </div>
+          <button className="danger-outline device-revoke" onClick={()=>revokeDevice(device)}>Encerrar acesso deste dispositivo</button>
+        </div>)}
+      </div>:<div className="empty">Nenhum outro dispositivo autorizado encontrado.</div>}
+
+      <div className="devices-footer">
+        <button className="danger-outline revoke-all-devices" onClick={revokeAll} disabled={devicesLoading}>Encerrar todas as sessões</button>
+        <small>Use esta opção se você perdeu um aparelho ou suspeita que alguém entrou na sua conta.</small>
+      </div>
+    </div>
   </>
 }
+
 
 function SettingsPage({data,reload,toast}:{data:Data;reload:()=>Promise<void>;toast:(s:string)=>void}){
   const[f,setF]=useState(data.settings);

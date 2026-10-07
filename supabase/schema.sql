@@ -564,3 +564,6 @@ grant execute on function public.sabado_username_register(text,text) to anon,aut
 
 
 -- V62: período da verificação em duas etapas configurável individualmente por usuário.
+
+
+-- V63: sessões e dispositivos autorizados gerenciáveis em Minha Segurança.

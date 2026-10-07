@@ -1,0 +1,9 @@
+-- V63 — Sessões e dispositivos conectados
+-- Migrações canônicas já aplicadas no Supabase:
+--   sessions_and_authorized_devices_v63
+--   sync_current_session_device_v63
+--
+-- Adiciona metadados do dispositivo autorizado, vínculo entre sessão e dispositivo,
+-- listagem dos dispositivos do próprio usuário e ações para revogar um dispositivo
+-- ou encerrar todas as sessões da conta.
+--   refresh_current_device_metadata_v63

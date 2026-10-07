@@ -400,3 +400,36 @@ A configuração do Administrador em **Configurações** passa a funcionar como 
 Alterar o período de uma pessoa não altera o período dos demais usuários.
 
 O botão **Sair** continua encerrando somente a sessão do sistema. O reconhecimento da verificação em duas etapas permanece no mesmo navegador até vencer o período individual configurado.
+
+
+## V63 — Sessões e dispositivos conectados
+
+Em **Minha Segurança**, cada usuário agora vê os navegadores e aparelhos autorizados para sua conta.
+
+Informações exibidas:
+- navegador;
+- aparelho/plataforma quando o navegador disponibiliza essa informação;
+- identificação de **Este dispositivo**;
+- último acesso;
+- data até a qual a 2FA está autorizada;
+- indicação de sessão ativa.
+
+Ações disponíveis:
+- **Encerrar acesso deste dispositivo**: revoga a autorização daquele aparelho e suas sessões vinculadas;
+- **Encerrar todas as sessões**: encerra todas as sessões e remove todos os dispositivos confiáveis da conta.
+
+Observação: alguns navegadores não fornecem o modelo exato do celular por privacidade. Nesses casos, o sistema mostra informações como **Chrome · Android**, **Safari · iPhone** ou **Chrome · Computador**.
+
+A V63 também atualiza automaticamente o nome do navegador/aparelho atual ao abrir **Minha Segurança**.
+
+
+## V64 — Tela de login ilustrada
+
+A tela de login recebeu um fundo visual relacionado à Evangelização Infanto Juvenil, com elementos como livro, calendário, crianças, coração, sino, cruz e atividades.
+
+- arte otimizada em WebP;
+- fundo responsivo para desktop e celular;
+- área central escurecida para manter a leitura do login;
+- card com transparência e desfoque suave;
+- no celular a arte é reposicionada para evitar duplicação visual do card;
+- mantém login, senha, primeiro acesso e 2FA sem alteração funcional.

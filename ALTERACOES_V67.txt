@@ -1,0 +1,4 @@
+V67
+- Removido o texto/arte de fundo da tela de login.
+- Fundo do login substituído por gradiente escuro limpo, exibindo somente a telinha.
+- Mantido o layout compacto do login no celular.

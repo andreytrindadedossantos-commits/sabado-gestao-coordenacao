@@ -1,0 +1,4 @@
+V68
+- Adicionada a tela de fundo enviada pelo usuário na tela de login.
+- Mantido o login compacto no celular.
+- O card do login permanece acima da arte com leitura preservada.

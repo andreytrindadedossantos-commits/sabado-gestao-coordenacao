@@ -1490,3 +1490,28 @@ html.dark .login-page .login-card{
     background:transparent !important;
   }
 }
+
+
+/* V68 — usa a arte enviada pelo usuário como fundo da tela de login */
+.login-page::before{
+  background:
+    linear-gradient(180deg, rgba(7,15,34,.10), rgba(7,15,34,.24)),
+    url('/login-background-v68.png') center center / cover no-repeat !important;
+  transform:none !important;
+}
+
+.login-page::after{
+  background:linear-gradient(180deg, rgba(7,15,34,.08), rgba(7,15,34,.16)) !important;
+}
+
+@media(max-width:700px){
+  .login-page::before{
+    background:
+      linear-gradient(180deg, rgba(7,15,34,.18), rgba(7,15,34,.28)),
+      url('/login-background-v68.png') center center / cover no-repeat !important;
+  }
+
+  .login-page::after{
+    background:linear-gradient(180deg, rgba(7,15,34,.12), rgba(7,15,34,.20)) !important;
+  }
+}

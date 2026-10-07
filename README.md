@@ -309,3 +309,13 @@ A correção já foi aplicada no Supabase. Registros criados antes desta correç
 - Andrey continua escolhendo **Professor** ou **Administrador**, mas somente depois de validar senha e TOTP.
 - A sessão validada continua com validade de 30 dias no aparelho.
 - O PWA continua removido: sistema somente no navegador e 100% online.
+
+
+## V59 — Botões compactos no celular
+
+- Menu, tema, notificações e botão Sair menores no celular.
+- Cabeçalho reduzido para 58px.
+- Ícones menores e espaçamento reduzido.
+- Relógio/data compactados para liberar mais espaço.
+- Ajuste extra para telas até 390px, incluindo Redmi A3.
+- Frontend alinhado com a regra de 2FA válida por 3 meses.

@@ -1,0 +1,1 @@
+-- V59: regra de 2FA por 3 meses já aplicada no Supabase.

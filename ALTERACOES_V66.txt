@@ -1,0 +1,12 @@
+Evangelização Infanto Juvenil — V66
+
+Alterações da tela de login:
+- Tela de login compactada no celular.
+- Maior área visível da ilustração de fundo.
+- Redução de espaçamentos, título, logo, campos e botões em telas pequenas.
+- Removido o botão "Esqueci minha senha / perdi o autenticador".
+- Removido o texto sobre usuário, senha e renovação do código de duas etapas na tela principal de login.
+- Removido o quadro explicativo de primeiro acesso da tela principal.
+- Mantido o botão "Primeiro acesso? Criar senha".
+- Mantida a explicação curta somente dentro do fluxo de criação de senha.
+- Fluxo de autenticação, 2FA, Supabase e demais funcionalidades não foram alterados.

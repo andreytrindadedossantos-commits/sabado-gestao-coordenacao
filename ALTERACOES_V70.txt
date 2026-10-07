@@ -1,0 +1,5 @@
+V70
+- Aplicada a imagem enviada como fundo da tela de login.
+- No desktop o fundo usa enquadramento amplo.
+- No celular o desenho inteiro aparece no topo, sem corte lateral, com o card do login abaixo.
+- Mantido o login compacto e legível.

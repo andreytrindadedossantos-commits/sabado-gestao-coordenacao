@@ -1,0 +1,4 @@
+V69
+- Removida a tela de login grande da arte de fundo.
+- Mantida apenas a tela principal pequena do sistema sobre a arte.
+- Fundo limpo com crianças e igreja preservados.

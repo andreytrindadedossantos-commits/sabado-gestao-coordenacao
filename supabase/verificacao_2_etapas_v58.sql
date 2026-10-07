@@ -1,0 +1,11 @@
+-- V58 — Verificação obrigatória em duas etapas por aplicativo autenticador (TOTP)
+-- A migração completa `two_factor_auth_totp_v58` já foi aplicada diretamente ao projeto Supabase.
+-- Ela adiciona:
+--   private.sabado_user_credentials: segredo TOTP, status e bloqueios
+--   private.sabado_2fa_challenges: desafios temporários de 10 minutos
+--   public.sabado_users.two_factor_enabled
+--   public.sabado_username_2fa_verify(text,text)
+--   bloqueio de senha e TOTP após 5 tentativas por 15 minutos
+--   redefinição administrativa de 2 etapas
+--
+-- Fonte canônica: histórico de migrações do projeto Supabase.

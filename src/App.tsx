@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Bell, BookOpen, Cake, CalendarDays, ClipboardCheck, Eye, EyeOff, Heart, History,
-  KeyRound, LogIn, Menu, Moon, PartyPopper, Pencil, Plus, Save, Settings, ShieldCheck, Sun, Trash2,
+  Bell, BookOpen, Cake, CalendarDays, ClipboardCheck, Copy, Eye, EyeOff, Heart, History,
+  KeyRound, LogIn, Menu, Moon, PartyPopper, Pencil, Plus, Save, Settings, ShieldCheck, Smartphone, Sun, Trash2,
   UserCog, Users, X
 } from 'lucide-react';
 import { supabase } from './supabase';
+import { QRCodeSVG } from 'qrcode.react';
 
 const ADMIN_EMAIL='andreytrindadedossantos@gmail.com';
 const LOGIN_VALIDITY_KEY='sabado_login_valid_until';
@@ -16,7 +17,7 @@ const months=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Ago
 const celebrationCards=[['Março','Dia da Mulher'],['Abril','Páscoa'],['Maio','Dia das Mães'],['Agosto','Dia dos Pais'],['Outubro','Dia das Crianças'],['Dezembro','Natal']];
 
 type Student={id:string;name:string;birth:string;group:string;guardian:string;phone:string;notes:string;ageInfo:string};
-type UserRec={id:string;name:string;loginName:string;passwordCreated:boolean;email:string;phone:string;role:string;group:string;status:string;permissions:Record<string,boolean>};
+type UserRec={id:string;name:string;loginName:string;passwordCreated:boolean;twoFactorEnabled:boolean;email:string;phone:string;role:string;group:string;status:string;permissions:Record<string,boolean>};
 type Mother={id:string;name:string;phone:string;email:string;notes:string;active:boolean;birth:string;ageInfo:string};
 type Schedule={id:string;date:string;adolescentTeacher:string;youngerTeacher:string;cleaningHelper:string;topic:string;replacementReason:string};
 type Attendance={id:string;date:string;teacher:string;group:string;entries:{studentId:string;name:string;present:boolean}[]};
@@ -90,7 +91,7 @@ async function loadAll():Promise<Data>{
   if(err) throw err;
   return {
     students:(s.data||[]).map((x:any)=>({id:x.id,name:x.name,birth:dateOnly(x.birth),group:x.group_name||'A definir',guardian:x.guardian||'',phone:x.phone||'',notes:x.notes||'',ageInfo:x.age_info||''})),
-    users:(u.data||[]).map((x:any)=>({id:x.id,name:x.name,loginName:x.login_name||'',passwordCreated:x.password_created===true,email:x.email||'',phone:x.phone||'',role:x.role||'Professor',group:x.group_name||'Geral',status:x.status||'Ativo',permissions:normalizePermissions(x.permissions)})),
+    users:(u.data||[]).map((x:any)=>({id:x.id,name:x.name,loginName:x.login_name||'',passwordCreated:x.password_created===true,twoFactorEnabled:x.two_factor_enabled===true,email:x.email||'',phone:x.phone||'',role:x.role||'Professor',group:x.group_name||'Geral',status:x.status||'Ativo',permissions:normalizePermissions(x.permissions)})),
     mothers:(m.data||[]).map((x:any)=>({id:x.id,name:x.name,phone:x.phone||'',email:x.email||'',notes:x.notes||'',active:x.active!==false,birth:dateOnly(x.birth),ageInfo:x.age_info||''})),
     schedules:(sc.data||[]).map((x:any)=>({id:x.id,date:dateOnly(x.date),adolescentTeacher:x.adolescent_teacher||'',youngerTeacher:x.younger_teacher||'',cleaningHelper:x.cleaning_helper||'',topic:x.topic||'',replacementReason:x.replacement_reason||''})),
     attendance:(a.data||[]).map((x:any)=>({id:x.id,date:dateOnly(x.date),teacher:x.teacher,group:x.group_name,entries:Array.isArray(x.entries)?x.entries:[]})),
@@ -109,10 +110,10 @@ function App(){
 
   const reload=async()=>{try{setData(await loadAll())}catch(e:any){setMsg(e.message||'Erro ao carregar dados.')}finally{setLoading(false)}};
 
-  const mapProfile=(x:any):UserRec=>({id:x.id,name:x.name,loginName:x.login_name||'',passwordCreated:x.password_created===true,email:x.email||'',phone:x.phone||'',role:x.role||'Professor',group:x.group_name||'Geral',status:x.status||'Ativo',permissions:normalizePermissions(x.permissions)});
+  const mapProfile=(x:any):UserRec=>({id:x.id,name:x.name,loginName:x.login_name||'',passwordCreated:x.password_created===true,twoFactorEnabled:x.two_factor_enabled===true,email:x.email||'',phone:x.phone||'',role:x.role||'Professor',group:x.group_name||'Geral',status:x.status||'Ativo',permissions:normalizePermissions(x.permissions)});
 
   const mapCustomProfile=(x:any):UserRec=>({
-    id:x.id,name:x.name,loginName:x.login_name||'',passwordCreated:true,email:'',phone:x.phone||'',
+    id:x.id,name:x.name,loginName:x.login_name||'',passwordCreated:true,twoFactorEnabled:x.two_factor_enabled===true,email:'',phone:x.phone||'',
     role:x.role||'Professor',group:x.group_name||'Geral',status:x.status||'Ativo',
     permissions:normalizePermissions(x.permissions)
   });
@@ -140,24 +141,8 @@ function App(){
     setAccessError('');
     const customToken=localStorage.getItem(CUSTOM_SESSION_KEY)||'';
 
-    if(session?.user?.email?.toLowerCase()===ADMIN_EMAIL){
-      if(loginExpired()){
-        localStorage.removeItem(LOGIN_VALIDITY_KEY);
-        await supabase.auth.signOut();
-        setAdmin(false);setCurrentUser(null);setSessionEmail('');setData(empty);setLoading(false);setAuthReady(true);
-        return;
-      }
-      if(!localStorage.getItem(LOGIN_VALIDITY_KEY))renewLoginValidity();
-      setAdmin(true);
-      setSessionEmail('Administrador');
-      setCurrentUser({id:'',name:'Administrador',loginName:'Administrador',passwordCreated:true,email:ADMIN_EMAIL,phone:'',role:'Administrador',group:'Geral',status:'Ativo',permissions:{}});
-      await reload();
-      setAuthReady(true);
-      return;
-    }
-
+    // Encerra qualquer sessão antiga do Supabase Auth para não existir um caminho sem 2 etapas.
     if(session){
-      // Professores da versão anterior passam a usar o novo login por usuário.
       await supabase.auth.signOut();
     }
 
@@ -207,7 +192,7 @@ function App(){
   if(!authReady)return <div className="loading">Verificando acesso...</div>;
 
   if(!sessionEmail){
-    return <LoginPage adminOnly={window.location.pathname==='/admin'} onSuccess={hydrateSession}/>;
+    return <LoginPage adminOnly={false} onSuccess={hydrateSession}/>;
   }
 
   if(accessError){
@@ -304,8 +289,8 @@ function App(){
   {msg&&<div className="toast">{msg}</div>}<section className="content">{content}</section><footer>© 2026 Evangelização Infanto Juvenil · Todos os direitos reservados.</footer></main></div>
 }
 
-function LoginPage({adminOnly,onSuccess}:{adminOnly:boolean;onSuccess:(session:any)=>Promise<void>}){
-  const[identity,setIdentity]=useState(adminOnly?ADMIN_EMAIL:''),[password,setPassword]=useState(''),[confirmPassword,setConfirmPassword]=useState(''),[mode,setMode]=useState<'login'|'signup'>('login'),[msg,setMsg]=useState(''),[pending,setPending]=useState(false),[roleChoice,setRoleChoice]=useState<any>(null),[showPassword,setShowPassword]=useState(false),[showConfirmPassword,setShowConfirmPassword]=useState(false);
+function LoginPage({adminOnly:_adminOnly,onSuccess:_onSuccess}:{adminOnly:boolean;onSuccess:(session:any)=>Promise<void>}){
+  const[identity,setIdentity]=useState(''),[password,setPassword]=useState(''),[confirmPassword,setConfirmPassword]=useState(''),[mode,setMode]=useState<'login'|'signup'>('login'),[msg,setMsg]=useState(''),[pending,setPending]=useState(false),[roleChoice,setRoleChoice]=useState<any>(null),[showPassword,setShowPassword]=useState(false),[showConfirmPassword,setShowConfirmPassword]=useState(false),[twoFactor,setTwoFactor]=useState<any>(null),[twoFactorCode,setTwoFactorCode]=useState('');
 
   const finishCustomLogin=(data:any)=>{
     localStorage.setItem(CUSTOM_SESSION_KEY,data.token);
@@ -319,54 +304,110 @@ function LoginPage({adminOnly,onSuccess}:{adminOnly:boolean;onSuccess:(session:a
     try{
       const{data,error}=await supabase.rpc('sabado_username_select_mode',{p_token:roleChoice.token,p_mode:accessMode});
       if(error)return setMsg(error.message||'Não foi possível selecionar o tipo de acesso.');
-      if(!data?.ok)return setMsg('Não foi possível selecionar o tipo de acesso.');
+      if(!data?.ok)return setMsg(data?.error||'Não foi possível selecionar o tipo de acesso.');
       finishCustomLogin(roleChoice);
     }catch(e:any){setMsg(e.message||'Não foi possível concluir o acesso.')}
     finally{setPending(false)}
   };
 
-  const go=async()=>{
-    setMsg('');
-    const clean=identity.trim();
-    if(!clean)return setMsg(adminOnly?'Informe o e-mail do administrador.':'Informe o usuário.');
-    if(mode==='signup'&&!adminOnly&&password.length<6)return setMsg('A senha deve conter pelo menos 6 caracteres.');
-    if(mode==='login'&&password.length<6)return setMsg('Informe a sua senha.');
-    if(mode==='signup'&&!adminOnly&&password!==confirmPassword)return setMsg('As senhas não conferem.');
-    setPending(true);
+  const verifyTwoFactor=async()=>{
+    if(!twoFactor?.challenge_token)return;
+    const code=twoFactorCode.replace(/\D/g,'');
+    if(!/^\d{6}$/.test(code))return setMsg('Informe o código de 6 números do aplicativo autenticador.');
+    setPending(true);setMsg('');
     try{
-      if(adminOnly){
-        if(clean.toLowerCase()!==ADMIN_EMAIL)return setMsg('Esta tela é exclusiva do Administrador.');
-        const r=await supabase.auth.signInWithPassword({email:clean.toLowerCase(),password});
-        if(r.error)return setMsg(r.error.message==='Invalid login credentials'?'E-mail ou senha incorretos.':r.error.message);
-        renewLoginValidity();
-        await onSuccess(r.data.session);
-        return;
-      }
+      const{data,error}=await supabase.rpc('sabado_username_2fa_verify',{p_challenge:twoFactor.challenge_token,p_code:code});
+      if(error)return setMsg(error.message||'Não foi possível validar o código.');
+      if(!data?.ok)return setMsg(data?.error||'Código inválido.');
 
-      const rpcName=mode==='signup'?'sabado_username_register':'sabado_username_login';
-      const{data,error}=await supabase.rpc(rpcName,{p_username:clean,p_password:password});
-      if(error)return setMsg(error.message||'Não foi possível concluir o acesso.');
-
-      if(mode==='signup'){
-        if(!data?.created)return setMsg(data?.error||'Não foi possível criar a senha.');
-        setPassword('');
-        setConfirmPassword('');
-        setMode('login');
-        setMsg('Senha criada com sucesso. Agora informe a senha e clique em Entrar.');
-        return;
-      }
-
-      if(!data?.token)return setMsg(data?.error||'Não foi possível iniciar o acesso.');
+      setTwoFactor(null);
+      setTwoFactorCode('');
       if(data?.can_choose_admin===true){
         setRoleChoice(data);
         return;
       }
       finishCustomLogin(data);
+    }catch(e:any){setMsg(e.message||'Não foi possível validar a verificação em duas etapas.')}
+    finally{setPending(false)}
+  };
+
+  const copySecret=async()=>{
+    if(!twoFactor?.totp_secret)return;
+    try{
+      await navigator.clipboard.writeText(twoFactor.totp_secret);
+      setMsg('Chave copiada.');
+    }catch{
+      setMsg('Não foi possível copiar automaticamente. Selecione a chave abaixo.');
+    }
+  };
+
+  const go=async()=>{
+    setMsg('');
+    const clean=identity.trim();
+    if(!clean)return setMsg('Informe o usuário.');
+    if(mode==='signup'&&password.length<6)return setMsg('A senha deve conter pelo menos 6 caracteres.');
+    if(mode==='login'&&password.length<6)return setMsg('Informe a sua senha.');
+    if(mode==='signup'&&password!==confirmPassword)return setMsg('As senhas não conferem.');
+    setPending(true);
+    try{
+      const rpcName=mode==='signup'?'sabado_username_register':'sabado_username_login';
+      const{data,error}=await supabase.rpc(rpcName,{p_username:clean,p_password:password});
+      if(error)return setMsg(error.message||'Não foi possível concluir o acesso.');
+      if(data?.error)return setMsg(data.error);
+
+      if(mode==='signup'){
+        if(!data?.created)return setMsg('Não foi possível criar a senha.');
+        setPassword('');
+        setConfirmPassword('');
+        setMode('login');
+        setMsg('Senha criada com sucesso. Agora informe a senha para configurar a verificação em duas etapas.');
+        return;
+      }
+
+      if(data?.two_factor_required===true&&data?.challenge_token){
+        setPassword('');
+        setTwoFactor(data);
+        setTwoFactorCode('');
+        return;
+      }
+
+      setMsg('Não foi possível iniciar a verificação em duas etapas.');
     }catch(e:any){setMsg(e.message||'Não foi possível concluir o acesso.')}
     finally{setPending(false)}
   };
 
-  return <div className="login-page"><div className="login-card teacher-login"><div className="login-brand"><div className="brand-logo"><BookOpen size={28}/><span className="brand-heart">♥</span></div><div><b>Evangelização Infanto Juvenil</b><span>Gestão e Coordenação</span></div></div><h1>{adminOnly?'Administrador':mode==='login'?'Entrar no sistema':'Criar minha senha'}</h1><p className="login-subtitle">{adminOnly?'Entre para liberar Administração e Auditoria.':mode==='login'?'Digite seu usuário e senha. Depois de entrar, este aparelho ficará liberado por 30 dias.':'No primeiro acesso, informe o seu usuário e crie uma senha com pelo menos 6 caracteres.'}</p>{!adminOnly&&mode==='login'&&<div className="first-access-help"><b>Primeiro acesso:</b> Clique no botão <strong>"Primeiro acesso? Criar senha"</strong>, informe o seu nome e cadastre uma senha com <strong>pelo menos 6 caracteres</strong>. Ela pode conter letras, números e caracteres especiais. Em seguida, clique em <strong>"Criar senha"</strong>.</div>}<input value={identity} disabled={adminOnly} onChange={e=>setIdentity(e.target.value)} type={adminOnly?'email':'text'} autoCapitalize="none" placeholder={adminOnly?'E-mail do administrador':'Usuário — ex.: Fernanda'}/><div className="password-field"><input value={password} onChange={e=>setPassword(e.target.value)} type={showPassword?'text':'password'} placeholder={mode==='login'?'Senha':'Crie uma senha'}/><button type="button" className="password-toggle" aria-label={showPassword?'Ocultar senha':'Mostrar senha'} title={showPassword?'Ocultar senha':'Mostrar senha'} onClick={()=>setShowPassword(v=>!v)}>{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></div>{mode==='signup'&&!adminOnly&&<div className="password-field"><input value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} type={showConfirmPassword?'text':'password'} placeholder="Confirmar senha"/><button type="button" className="password-toggle" aria-label={showConfirmPassword?'Ocultar senha':'Mostrar senha'} title={showConfirmPassword?'Ocultar senha':'Mostrar senha'} onClick={()=>setShowConfirmPassword(v=>!v)}>{showConfirmPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></div>}<button className="primary login-main-button" disabled={pending} onClick={go}>{pending?'Aguarde...':mode==='login'?<><LogIn size={18}/> Entrar</>:<><KeyRound size={18}/> Criar senha</>}</button>{!adminOnly&&<><button className="link-btn" disabled={pending} onClick={()=>{setMode(mode==='login'?'signup':'login');setPassword('');setConfirmPassword('');setShowPassword(false);setShowConfirmPassword(false);setMsg('')}}>{mode==='login'?'Primeiro acesso? Criar senha':'Já criei minha senha'}</button>{mode==='login'&&<button className="link-btn" onClick={()=>setMsg('Se esqueceu a senha, peça ao Administrador para liberar a criação de uma nova senha.')}>Esqueci minha senha</button>}</>}{adminOnly&&<button className="link-btn" onClick={()=>{window.location.href='/'}}>Voltar para login dos usuários</button>}{msg&&<small className="login-message">{msg}</small>}</div>{roleChoice&&<Modal title="Como deseja entrar?" close={()=>setRoleChoice(null)}><p className="role-choice-text">Seu usuário <b>Andrey</b> possui dois tipos de acesso. Escolha como deseja entrar agora:</p><div className="role-choice-buttons"><button className="role-choice professor" disabled={pending} onClick={()=>chooseRole('professor')}><Users size={22}/><span><b>Professor</b><small>Acesso conforme as permissões de professor</small></span></button><button className="role-choice admin" disabled={pending} onClick={()=>chooseRole('admin')}><ShieldCheck size={22}/><span><b>Administrador</b><small>Acesso completo ao sistema</small></span></button></div></Modal>}</div>
+  if(twoFactor){
+    const issuer='Evangelização Infanto Juvenil';
+    const account=twoFactor.account_name||identity.trim()||'Usuário';
+    const secret=twoFactor.totp_secret||'';
+    const uri=twoFactor.setup_required
+      ?`otpauth://totp/${encodeURIComponent(issuer+':'+account)}?secret=${encodeURIComponent(secret)}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`
+      :'';
+
+    return <div className="login-page"><div className="login-card teacher-login two-factor-card">
+      <div className="login-brand"><div className="brand-logo"><ShieldCheck size={28}/><span className="brand-heart">♥</span></div><div><b>Evangelização Infanto Juvenil</b><span>Segurança em duas etapas</span></div></div>
+      <h1>{twoFactor.setup_required?'Ativar verificação em duas etapas':'Código de verificação'}</h1>
+      {twoFactor.setup_required?<>
+        <p className="login-subtitle">Para proteger sua conta, configure um aplicativo autenticador. Essa etapa é obrigatória antes de entrar no sistema.</p>
+        <div className="two-factor-setup">
+          <div className="two-factor-step"><span>1</span><div><b>Abra um aplicativo autenticador</b><small>Google Authenticator, Microsoft Authenticator, Authy ou outro aplicativo TOTP.</small></div></div>
+          <div className="two-factor-qr"><QRCodeSVG value={uri} size={188} level="M" includeMargin/></div>
+          <div className="two-factor-step"><span>2</span><div><b>Escaneie o QR Code</b><small>Se preferir, cadastre manualmente usando a chave abaixo.</small></div></div>
+          <div className="two-factor-secret"><code>{secret.match(/.{1,4}/g)?.join(' ')||secret}</code><button type="button" onClick={copySecret} title="Copiar chave"><Copy size={16}/></button></div>
+          <div className="two-factor-step"><span>3</span><div><b>Digite o código de 6 números</b><small>O código muda aproximadamente a cada 30 segundos.</small></div></div>
+        </div>
+      </>:<>
+        <p className="login-subtitle">Abra seu aplicativo autenticador e informe o código atual para concluir o acesso.</p>
+        <div className="two-factor-verified-icon"><Smartphone size={34}/><ShieldCheck size={22}/></div>
+      </>}
+      <input className="two-factor-code" value={twoFactorCode} onChange={e=>setTwoFactorCode(e.target.value.replace(/\D/g,'').slice(0,6))} onKeyDown={e=>{if(e.key==='Enter')verifyTwoFactor()}} inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="000000"/>
+      <button className="primary login-main-button" disabled={pending} onClick={verifyTwoFactor}><ShieldCheck size={18}/>{pending?'Verificando...':twoFactor.setup_required?'Ativar e entrar':'Verificar e entrar'}</button>
+      <button className="link-btn" disabled={pending} onClick={()=>{setTwoFactor(null);setTwoFactorCode('');setMsg('')}}>Voltar para o login</button>
+      {msg&&<small className="login-message">{msg}</small>}
+    </div></div>
+  }
+
+  return <div className="login-page"><div className="login-card teacher-login"><div className="login-brand"><div className="brand-logo"><BookOpen size={28}/><span className="brand-heart">♥</span></div><div><b>Evangelização Infanto Juvenil</b><span>Gestão e Coordenação</span></div></div><h1>{mode==='login'?'Entrar no sistema':'Criar minha senha'}</h1><p className="login-subtitle">{mode==='login'?'Digite seu usuário e senha. O acesso protegido por duas etapas será solicitado antes de entrar.':'No primeiro acesso, informe o seu usuário e crie uma senha com pelo menos 6 caracteres.'}</p>{mode==='login'&&<div className="first-access-help"><b>Primeiro acesso:</b> clique em <strong>"Primeiro acesso? Criar senha"</strong>, crie sua senha e, no login seguinte, configure o <strong>aplicativo autenticador</strong>.</div>}<input value={identity} onChange={e=>setIdentity(e.target.value)} type="text" autoCapitalize="none" autoComplete="username" placeholder="Usuário — ex.: Fernanda"/><div className="password-field"><input value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')go()}} type={showPassword?'text':'password'} autoComplete={mode==='login'?'current-password':'new-password'} placeholder={mode==='login'?'Senha':'Crie uma senha'}/><button type="button" className="password-toggle" aria-label={showPassword?'Ocultar senha':'Mostrar senha'} title={showPassword?'Ocultar senha':'Mostrar senha'} onClick={()=>setShowPassword(v=>!v)}>{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></div>{mode==='signup'&&<div className="password-field"><input value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} type={showConfirmPassword?'text':'password'} autoComplete="new-password" placeholder="Confirmar senha"/><button type="button" className="password-toggle" aria-label={showConfirmPassword?'Ocultar senha':'Mostrar senha'} title={showConfirmPassword?'Ocultar senha':'Mostrar senha'} onClick={()=>setShowConfirmPassword(v=>!v)}>{showConfirmPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></div>}<button className="primary login-main-button" disabled={pending} onClick={go}>{pending?'Aguarde...':mode==='login'?<><LogIn size={18}/> Entrar</>:<><KeyRound size={18}/> Criar senha</>}</button><button className="link-btn" disabled={pending} onClick={()=>{setMode(mode==='login'?'signup':'login');setPassword('');setConfirmPassword('');setShowPassword(false);setShowConfirmPassword(false);setMsg('')}}>{mode==='login'?'Primeiro acesso? Criar senha':'Já criei minha senha'}</button>{mode==='login'&&<button className="link-btn" onClick={()=>setMsg('Se esqueceu a senha ou perdeu o autenticador, peça ao Administrador para redefinir o acesso.')}>Esqueci minha senha / perdi o autenticador</button>}{msg&&<small className="login-message">{msg}</small>}</div>{roleChoice&&<Modal title="Como deseja entrar?" close={()=>setRoleChoice(null)}><p className="role-choice-text">Seu usuário <b>Andrey</b> possui dois tipos de acesso. Escolha como deseja entrar agora:</p><div className="role-choice-buttons"><button className="role-choice professor" disabled={pending} onClick={()=>chooseRole('professor')}><Users size={22}/><span><b>Professor</b><small>Acesso conforme as permissões de professor</small></span></button><button className="role-choice admin" disabled={pending} onClick={()=>chooseRole('admin')}><ShieldCheck size={22}/><span><b>Administrador</b><small>Acesso completo ao sistema</small></span></button></div></Modal>}</div>
 }
 
 function AccessBlocked({message,email}:{message:string;email:string}){
@@ -624,6 +665,15 @@ function UsersPage({data,admin,reload,toast}:{data:Data;admin:boolean;reload:()=
     await reload();toast('Nova senha liberada. No próximo acesso o usuário deverá tocar em “Primeiro acesso”.');
   };
 
+  const resetTwoFactor=async(u:UserRec)=>{
+    if(!admin||!u.passwordCreated)return;
+    if(!confirm('Redefinir a verificação em duas etapas de '+u.name+'? O acesso atual será encerrado e a pessoa precisará configurar o autenticador novamente.'))return;
+    const{data,error}=await supabase.rpc('sabado_username_reset_2fa',{p_profile_id:u.id});
+    if(error)return toast(error.message);
+    if(data!==true)return toast('Não foi possível redefinir a verificação em duas etapas.');
+    await reload();toast('Verificação em duas etapas redefinida. No próximo login o usuário configurará o autenticador novamente.');
+  };
+
   const del=async(u:UserRec)=>{
     if(!admin)return;
     if(u.email?.toLowerCase()===ADMIN_EMAIL)return toast('O Administrador não pode ser excluído aqui.');
@@ -633,10 +683,10 @@ function UsersPage({data,admin,reload,toast}:{data:Data;admin:boolean;reload:()=
     await reload();toast('Usuário excluído.');
   };
 
-  return <><Title t={admin?'Usuários e Permissões':'Professores'} s={admin?'Cadastre somente o nome e o usuário. Cada pessoa cria a própria senha no primeiro acesso.':'Lista de professores ativos.'}/>
-  {admin&&<div className="panel access-instructions"><ShieldCheck size={22}/><div><b>Acesso simples por usuário</b><span>Exemplo: <strong>Fernanda</strong> → Primeiro acesso → Criar senha. Depois disso, o sistema mantém o acesso neste aparelho por <strong>30 dias</strong> antes de solicitar usuário e senha novamente.</span></div></div>}
+  return <><Title t={admin?'Usuários e Permissões':'Professores'} s={admin?'Cada usuário possui senha individual e verificação obrigatória em duas etapas.':'Lista de professores ativos.'}/>
+  {admin&&<div className="panel access-instructions"><ShieldCheck size={22}/><div><b>Acesso protegido por duas etapas</b><span>Após criar a senha, cada professor deverá configurar um aplicativo autenticador. O sistema só libera o acesso depois de validar o código de 6 números. A sessão permanece válida neste aparelho por <strong>30 dias</strong>.</span></div></div>}
   {admin&&<div className="panel form user-create-form"><input placeholder="Nome completo *" value={f.name} onChange={e=>setF({...f,name:e.target.value,loginName:f.loginName||suggestedLogin(e.target.value)})}/><input placeholder="Usuário para login * — ex.: Fernanda" value={f.loginName} onChange={e=>setF({...f,loginName:e.target.value.replace(/\s+/g,'')})}/><input placeholder="Telefone / WhatsApp (opcional)" value={f.phone} onChange={e=>setF({...f,phone:e.target.value})}/><select value={f.group} onChange={e=>setF({...f,group:e.target.value})}><option>Geral</option><option>Menores</option><option>Adolescentes</option></select><select value={f.status} onChange={e=>setF({...f,status:e.target.value})}><option>Ativo</option><option>Inativo</option></select><button className="primary" onClick={save}><Plus size={17}/> Cadastrar usuário</button></div>}
-  <div className="cards">{visibleUsers.map(u=><div className="person user-access-card" key={u.id}><div className="avatar">{u.name[0]}</div><div><b>{u.name}</b><small>{u.role} · {u.group} · {u.status}</small>{admin&&<><small><strong>Usuário:</strong> {u.loginName||'Não definido'} {u.phone&&' · '+u.phone}</small><span className={u.passwordCreated?'access-status ready':'access-status missing'}>{u.passwordCreated?'Senha criada · acesso ativo':'Aguardando primeiro acesso'}</span></>}</div>{admin&&<div className="record-actions permission-actions"><button className="edit-icon" onClick={()=>openPermissions(u)}><Settings size={16}/> Permissões</button>{u.passwordCreated&&<button className="edit-icon" onClick={()=>resetAccess(u)}><KeyRound size={16}/> Nova senha</button>}<button className="edit-icon" onClick={()=>setEdit({...u})}><Pencil size={16}/></button>{u.email?.toLowerCase()!==ADMIN_EMAIL&&<button className="danger-icon" onClick={()=>del(u)}><Trash2 size={16}/></button>}</div>}</div>)}</div>
+  <div className="cards">{visibleUsers.map(u=><div className="person user-access-card" key={u.id}><div className="avatar">{u.name[0]}</div><div><b>{u.name}</b><small>{u.role} · {u.group} · {u.status}</small>{admin&&<><small><strong>Usuário:</strong> {u.loginName||'Não definido'} {u.phone&&' · '+u.phone}</small><div className="access-security-status"><span className={u.passwordCreated?'access-status ready':'access-status missing'}>{u.passwordCreated?'Senha criada':'Aguardando primeiro acesso'}</span>{u.passwordCreated&&<span className={u.twoFactorEnabled?'access-status ready':'access-status missing'}>{u.twoFactorEnabled?'✓ 2 etapas ativa':'2 etapas pendente'}</span>}</div></>}</div>{admin&&<div className="record-actions permission-actions"><button className="edit-icon" onClick={()=>openPermissions(u)}><Settings size={16}/> Permissões</button>{u.passwordCreated&&<button className="edit-icon" onClick={()=>resetAccess(u)}><KeyRound size={16}/> Nova senha</button>}{u.passwordCreated&&<button className="edit-icon security-reset-button" onClick={()=>resetTwoFactor(u)}><ShieldCheck size={16}/> Redefinir 2 etapas</button>}<button className="edit-icon" onClick={()=>setEdit({...u})}><Pencil size={16}/></button>{u.email?.toLowerCase()!==ADMIN_EMAIL&&<button className="danger-icon" onClick={()=>del(u)}><Trash2 size={16}/></button>}</div>}</div>)}</div>
   {admin&&edit&&<Modal title="Alterar usuário" close={()=>setEdit(null)}><input value={edit.name} onChange={e=>setEdit({...edit,name:e.target.value})} placeholder="Nome completo"/><input value={edit.loginName} placeholder="Usuário para login" onChange={e=>setEdit({...edit,loginName:e.target.value.replace(/\s+/g,'')})}/><input value={edit.phone} placeholder="Telefone / WhatsApp" onChange={e=>setEdit({...edit,phone:e.target.value})}/><select value={edit.group} onChange={e=>setEdit({...edit,group:e.target.value})}><option>Geral</option><option>Menores</option><option>Adolescentes</option></select><select value={edit.status} onChange={e=>setEdit({...edit,status:e.target.value})}><option>Ativo</option><option>Inativo</option></select><select value={edit.role} onChange={e=>setEdit({...edit,role:e.target.value})}><option>Professor</option><option>Administrador</option></select><button className="primary" onClick={update}>Salvar alterações</button></Modal>}
   {admin&&permEdit&&<Modal title={'Permissões · '+permEdit.name} close={()=>setPermEdit(null)}><div className="permission-toolbar"><button onClick={()=>setPerm({...DEFAULT_TEACHER_PERMISSIONS})}>Padrão professor</button><button onClick={()=>setPerm(Object.fromEntries(Object.keys(DEFAULT_TEACHER_PERMISSIONS).map(k=>[k,true])))}>Liberar tudo</button><button onClick={()=>setPerm(Object.fromEntries(Object.keys(DEFAULT_TEACHER_PERMISSIONS).map(k=>[k,false])))}>Bloquear tudo</button></div><div className="permission-grid">{PERMISSION_GROUPS.map(g=><div className="permission-row" key={g.title}><b>{g.title}</b><div>{g.view&&<label><input type="checkbox" checked={perm[g.view]===true} onChange={e=>setPerm({...perm,[g.view!]:e.target.checked})}/> Visualizar</label>}{g.manage&&<label><input type="checkbox" checked={perm[g.manage]===true} onChange={e=>setPerm({...perm,[g.manage!]:e.target.checked,[g.view!]:e.target.checked?true:perm[g.view!]})}/> Alterar / lançar</label>}</div></div>)}</div><button className="primary wide permission-save-button" onClick={savePermissions}><Save size={17}/> Confirmar e salvar permissões</button></Modal>}</>
 }

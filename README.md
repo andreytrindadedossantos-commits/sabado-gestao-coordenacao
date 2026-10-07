@@ -294,3 +294,18 @@ A correção já foi aplicada no Supabase. Registros criados antes desta correç
 - Mantidas as funcionalidades da V52, incluindo mostrar/ocultar senha.
 - Ao abrir esta versão, o sistema tenta remover automaticamente Service Workers e caches deixados pelas versões PWA anteriores.
 - O acesso continua 100% online em `https://evangelizacao.dynv6.net/`.
+
+
+## V58 — Verificação obrigatória em duas etapas
+
+- Login passa a exigir **usuário + senha + código do aplicativo autenticador**.
+- No primeiro login desta versão, o usuário configura o segundo fator por **QR Code** ou chave manual.
+- Compatível com Google Authenticator, Microsoft Authenticator, Authy e outros aplicativos TOTP.
+- Código numérico de 6 dígitos, renovado aproximadamente a cada 30 segundos.
+- Após 5 senhas incorretas: bloqueio temporário de 15 minutos.
+- Após 5 códigos TOTP incorretos: bloqueio temporário de 15 minutos.
+- O Administrador pode usar **Redefinir 2 etapas** quando alguém perde ou troca o celular.
+- O acesso administrativo antigo por e-mail foi removido do frontend para impedir um caminho que não passasse pelo segundo fator.
+- Andrey continua escolhendo **Professor** ou **Administrador**, mas somente depois de validar senha e TOTP.
+- A sessão validada continua com validade de 30 dias no aparelho.
+- O PWA continua removido: sistema somente no navegador e 100% online.

@@ -1140,3 +1140,28 @@ html.dark .access-instructions span{color:#fff!important}
 }
 .first-access-help b,.first-access-help strong{font-weight:700}
 html.dark .first-access-help{color:#fff}
+
+
+/* V58 — verificação obrigatória em duas etapas (TOTP) */
+.two-factor-card{width:min(470px,100%)}
+.two-factor-setup{display:grid;gap:12px}
+.two-factor-step{display:flex;align-items:flex-start;gap:10px}
+.two-factor-step>span{width:26px;height:26px;min-width:26px;border-radius:50%;display:grid;place-items:center;background:var(--blue);color:#fff;font-size:12px;font-weight:700}
+.two-factor-step>div{display:grid;gap:3px}
+.two-factor-step small{color:var(--muted);line-height:1.45}
+.two-factor-qr{display:flex;justify-content:center;padding:12px;background:#fff;border:1px solid var(--border);border-radius:14px;width:max-content;max-width:100%;margin:0 auto}
+.two-factor-secret{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px dashed var(--border-strong);border-radius:10px;background:var(--surface-soft)}
+.two-factor-secret code{font-size:13px;letter-spacing:.8px;word-break:break-all;flex:1;color:var(--text)}
+.two-factor-secret button{width:36px;height:36px;min-width:36px;display:grid;place-items:center;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text)}
+.two-factor-code{text-align:center!important;font-size:24px!important;font-weight:700!important;letter-spacing:8px!important}
+.two-factor-verified-icon{width:78px;height:78px;border-radius:22px;margin:4px auto 8px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;position:relative}
+.two-factor-verified-icon svg:last-child{position:absolute;right:8px;bottom:8px;background:var(--surface);border-radius:50%;padding:3px}
+.access-security-status{display:flex;flex-wrap:wrap;gap:6px}
+.access-security-status .access-status{width:max-content}
+.security-reset-button{white-space:nowrap}
+html.dark .two-factor-qr{background:#fff!important}
+@media(max-width:700px){
+  .two-factor-card{padding:20px}
+  .two-factor-qr svg{width:170px;height:170px}
+  .two-factor-code{font-size:21px!important;letter-spacing:6px!important}
+}

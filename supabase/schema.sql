@@ -552,3 +552,6 @@ end;
 $$;
 
 grant execute on function public.sabado_username_register(text,text) to anon,authenticated;
+
+
+-- V58: verificação obrigatória em duas etapas TOTP aplicada pela migração `two_factor_auth_totp_v58` no Supabase.

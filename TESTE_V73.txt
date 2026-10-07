@@ -1,0 +1,24 @@
+VERIFICAÇÃO TÉCNICA V73
+Data: 07/10/2026
+
+Banco Supabase conectado:
+- tabela sabado_notification_states: criada
+- RLS: ativado
+- políticas por usuário: 4
+- gatilho de reunião: presente para INSERT e UPDATE
+- gatilho de escala: presente para UPDATE
+- gatilho de escala atualizado para exibir professor anterior → substituto
+
+Frontend:
+- TypeScript analisado com tsc global.
+- Não foram encontrados erros de sintaxe/TypeScript no código alterado.
+- Os únicos avisos do teste local foram dependências React/Supabase não instaladas no ambiente de teste e tipos de import.meta.env, esperados sem node_modules.
+
+Fluxos corrigidos:
+- Notificação lida: some e persiste por usuário.
+- Notificação excluída: some e persiste por usuário.
+- Troca de usuário no mesmo navegador: estados locais não se misturam entre contas.
+- Reunião criada/reagendada: banco gera notificação automaticamente.
+- Alteração de escala: banco gera notificação detalhada.
+- Chamada: bloqueia salvar se algum aluno não tiver Sim/Não.
+- Texto 2FA: usa período configurado.

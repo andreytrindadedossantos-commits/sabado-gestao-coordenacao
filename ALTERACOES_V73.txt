@@ -1,0 +1,32 @@
+V73 - correções gerais concluídas
+
+BANCO DE DADOS
+- A migração de notificações persistentes por usuário já foi aplicada ao Supabase conectado.
+- A notificação de alteração de escala também foi atualizada no Supabase para mostrar professor anterior → substituto.
+- Os SQLs usados foram incluídos na pasta supabase para manter a versão portátil.
+
+NOTIFICAÇÕES
+- Marcar como lida agora salva no Supabase por usuário.
+- Excluir agora salva no Supabase por usuário.
+- A mesma notificação não deve reaparecer em outro celular/computador do mesmo usuário.
+- Apenas notificações novas ficam visíveis.
+- Mantido fallback local no navegador caso ocorra falha temporária de rede.
+
+REUNIÕES
+- O banco já possui gatilho automático de notificação ao criar reunião.
+- O banco já possui gatilho automático ao reagendar reunião.
+- A interface agora informa corretamente que os professores foram notificados, sem criar notificações duplicadas.
+
+ESCALAS
+- Alterar professor dispara notificação automática.
+- A notificação mostra data e professor anterior → substituto.
+- Também pode mostrar mudança de mãe auxiliar, data, assunto e motivo da substituição.
+
+CHAMADAS
+- Não permite salvar enquanto existir aluno sem Sim/Não marcado.
+- Evita transformar aluno não marcado em falta por engano.
+- SIM permanece verde e NÃO permanece vermelho quando selecionados.
+
+2FA
+- O texto da tela de usuários usa o período real configurado em dias ou meses.
+- Não fica mais fixo em "3 meses".

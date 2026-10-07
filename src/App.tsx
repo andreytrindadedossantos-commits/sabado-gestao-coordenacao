@@ -137,8 +137,8 @@ async function loadAll():Promise<Data>{
 
 function App(){
   const [data,setData]=useState<Data>(empty),[loading,setLoading]=useState(true),[authReady,setAuthReady]=useState(false),[page,setPage]=useState('home'),[menu,setMenu]=useState(false),[dark,setDark]=useState(()=>localStorage.getItem('theme')==='dark'),[msg,setMsg]=useState(''),[now,setNow]=useState(new Date()),[admin,setAdmin]=useState(false),[currentUser,setCurrentUser]=useState<UserRec|null>(null),[sessionEmail,setSessionEmail]=useState(''),[accessError,setAccessError]=useState(''),[noticeOpen,setNoticeOpen]=useState(false),[meetingNotice,setMeetingNotice]=useState<Meeting|null>(null),[rsvpUserId,setRsvpUserId]=useState('');
-  const [read,setRead]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem('readNotices')||'[]')}catch{return[]}}),
-        [hiddenNotices,setHiddenNotices]=useState<string[]>(()=>{try{return JSON.parse(localStorage.getItem('hiddenNotices')||'[]')}catch{return[]}});
+  const [read,setRead]=useState<string[]>([]),
+        [hiddenNotices,setHiddenNotices]=useState<string[]>([]);
 
   const reload=async()=>{try{setData(await loadAll())}catch(e:any){setMsg(e.message||'Erro ao carregar dados.')}finally{setLoading(false)}};
 
@@ -221,6 +221,28 @@ function App(){
 
   useEffect(()=>{document.documentElement.classList.toggle('dark',dark);document.documentElement.setAttribute('data-theme',dark?'dark':'light');document.documentElement.style.colorScheme=dark?'dark':'light';localStorage.setItem('theme',dark?'dark':'light')},[dark]);
   useEffect(()=>{
+    if(!currentUser?.id){setRead([]);setHiddenNotices([]);return;}
+    let cancelled=false;
+    const readKey=`readNotices:${currentUser.id}`;
+    const hiddenKey=`hiddenNotices:${currentUser.id}`;
+    let localRead:string[]=[];let localHidden:string[]=[];
+    try{localRead=JSON.parse(localStorage.getItem(readKey)||'[]')}catch{}
+    try{localHidden=JSON.parse(localStorage.getItem(hiddenKey)||'[]')}catch{}
+    setRead(localRead);setHiddenNotices(localHidden);
+    (async()=>{
+      const{data:states,error}=await supabase.from('sabado_notification_states').select('notification_id,status').eq('user_id',currentUser.id);
+      if(cancelled||error)return;
+      const remoteRead=(states||[]).filter((x:any)=>x.status==='read'||x.status==='deleted').map((x:any)=>x.notification_id);
+      const remoteHidden=(states||[]).filter((x:any)=>x.status==='deleted').map((x:any)=>x.notification_id);
+      const mergedRead=[...new Set([...localRead,...remoteRead])];
+      const mergedHidden=[...new Set([...localHidden,...remoteHidden])];
+      setRead(mergedRead);setHiddenNotices(mergedHidden);
+      localStorage.setItem(readKey,JSON.stringify(mergedRead));
+      localStorage.setItem(hiddenKey,JSON.stringify(mergedHidden));
+    })();
+    return()=>{cancelled=true};
+  },[currentUser?.id]);
+  useEffect(()=>{
     if(!sessionEmail)return;
     const channel=supabase.channel('sabado-notifications-live').on('postgres_changes',{event:'INSERT',schema:'public',table:'sabado_notifications'},payload=>{
       const n=payload.new as any;
@@ -286,36 +308,46 @@ function App(){
   const visibleNotifications=data.notifications.filter(n=>!hiddenNotices.includes(n.id)&&!read.includes(n.id));
   const unread=visibleNotifications.length;
   const toast=(s:string)=>setMsg(s);
+  const noticeReadKey=currentUser?.id?`readNotices:${currentUser.id}`:'readNotices';
+  const noticeHiddenKey=currentUser?.id?`hiddenNotices:${currentUser.id}`:'hiddenNotices';
 
   const enableDeviceNotifications=async()=>{
     if(!('Notification' in window))return toast('Este navegador não oferece notificações do dispositivo.');
     const permission=await Notification.requestPermission();
     toast(permission==='granted'?'Notificações do dispositivo ativadas.':'Permissão de notificações não concedida.');
   };
-  const markNoticeRead=(id:string)=>{
+  const persistNoticeState=async(id:string,status:'read'|'deleted')=>{
+    if(!currentUser?.id)return;
+    const{error}=await supabase.from('sabado_notification_states').upsert({user_id:currentUser.id,notification_id:id,status,updated_at:new Date().toISOString()},{onConflict:'user_id,notification_id'});
+    if(error)console.warn('Não foi possível sincronizar o estado da notificação:',error.message);
+  };
+  const markNoticeRead=async(id:string)=>{
     const next=[...new Set([...read,id])];
     setRead(next);
-    localStorage.setItem('readNotices',JSON.stringify(next));
+    localStorage.setItem(noticeReadKey,JSON.stringify(next));
+    await persistNoticeState(id,'read');
     toast('Notificação marcada como lida.');
   };
-  const deleteNotice=(id:string)=>{
+  const deleteNotice=async(id:string)=>{
     const hidden=[...new Set([...hiddenNotices,id])];
     const readNext=[...new Set([...read,id])];
     setHiddenNotices(hidden);
     setRead(readNext);
-    localStorage.setItem('hiddenNotices',JSON.stringify(hidden));
-    localStorage.setItem('readNotices',JSON.stringify(readNext));
+    localStorage.setItem(noticeHiddenKey,JSON.stringify(hidden));
+    localStorage.setItem(noticeReadKey,JSON.stringify(readNext));
+    await persistNoticeState(id,'deleted');
     toast('Notificação excluída. Ela não será exibida novamente.');
   };
-  const clearNotices=()=>{
+  const clearNotices=async()=>{
     if(!visibleNotifications.length||!confirm('Excluir todas as notificações exibidas?'))return;
     const ids=visibleNotifications.map(n=>n.id);
     const hidden=[...new Set([...hiddenNotices,...ids])];
     const readNext=[...new Set([...read,...ids])];
     setHiddenNotices(hidden);
     setRead(readNext);
-    localStorage.setItem('hiddenNotices',JSON.stringify(hidden));
-    localStorage.setItem('readNotices',JSON.stringify(readNext));
+    localStorage.setItem(noticeHiddenKey,JSON.stringify(hidden));
+    localStorage.setItem(noticeReadKey,JSON.stringify(readNext));
+    await Promise.all(ids.map(id=>persistNoticeState(id,'deleted')));
     toast('Notificações excluídas. Somente novas notificações serão exibidas.');
   };
 
@@ -357,7 +389,7 @@ function App(){
   const doSignOut=async()=>{const token=localStorage.getItem(CUSTOM_SESSION_KEY);if(token)await supabase.rpc('sabado_username_logout',{p_token:token});localStorage.removeItem(CUSTOM_SESSION_KEY);localStorage.removeItem(LOGIN_VALIDITY_KEY);await supabase.auth.signOut();setAdmin(false);setCurrentUser(null);setSessionEmail('');setData(empty);setPage('home')};
 
   return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><div className="brand-logo"><BookOpen size={26}/><span className="brand-heart">♥</span></div><div className="brand-copy"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...personal,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}<div className="user-session-card"><ShieldCheck size={16}/><div><b>{currentUser?.name||sessionEmail}</b><small>{admin?'Administrador':'Professor'}</small></div></div></aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><button className="top-icon-btn theme-toggle" title={dark?'Usar tema claro':'Usar tema cinza escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button><button className="ghost-btn" onClick={doSignOut}>Sair</button></div></header>
-  {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações novas</b><div className="notice-tools"><button className="read-all" onClick={()=>{const ids=visibleNotifications.map(n=>n.id);const next=[...new Set([...read,...ids])];setRead(next);localStorage.setItem('readNotices',JSON.stringify(next));toast(ids.length?'Todas foram marcadas como lidas.':'Nenhuma notificação nova.')}}>✓ Marcar todas como lidas</button><button className="read-all" onClick={enableDeviceNotifications}>🔔 Ativar no dispositivo</button>{visibleNotifications.length>0&&<button className="delete-notifications-btn" onClick={clearNotices}><Trash2 size={15}/> Excluir notificações</button>}<button className="icon-close" onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div></div>{visibleNotifications.map(n=><div className="notice-item" key={n.id}><div className="notice-item-head"><b>{n.title}</b><div className="notice-item-actions"><button className="notice-read" title="Marcar como lida" onClick={()=>markNoticeRead(n.id)}>✓</button><button className="notice-delete" title="Excluir esta notificação" onClick={()=>deleteNotice(n.id)}><Trash2 size={15}/></button></div></div><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}</div>)}{!visibleNotifications.length&&<Empty text="Nenhuma notificação nova."/>}</div>}
+  {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações novas</b><div className="notice-tools"><button className="read-all" onClick={async()=>{const ids=visibleNotifications.map(n=>n.id);const next=[...new Set([...read,...ids])];setRead(next);localStorage.setItem(noticeReadKey,JSON.stringify(next));await Promise.all(ids.map(id=>persistNoticeState(id,'read')));toast(ids.length?'Todas foram marcadas como lidas.':'Nenhuma notificação nova.')}}>✓ Marcar todas como lidas</button><button className="read-all" onClick={enableDeviceNotifications}>🔔 Ativar no dispositivo</button>{visibleNotifications.length>0&&<button className="delete-notifications-btn" onClick={clearNotices}><Trash2 size={15}/> Excluir notificações</button>}<button className="icon-close" onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div></div>{visibleNotifications.map(n=><div className="notice-item" key={n.id}><div className="notice-item-head"><b>{n.title}</b><div className="notice-item-actions"><button className="notice-read" title="Marcar como lida" onClick={()=>markNoticeRead(n.id)}>✓</button><button className="notice-delete" title="Excluir esta notificação" onClick={()=>deleteNotice(n.id)}><Trash2 size={15}/></button></div></div><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}</div>)}{!visibleNotifications.length&&<Empty text="Nenhuma notificação nova."/>}</div>}
   {meetingNotice&&<Modal title="Confirmar participação" close={()=>setMeetingNotice(null)}>{admin?<><label>Responder como</label><select value={rsvpUserId} onChange={e=>setRsvpUserId(e.target.value)}><option value="">Selecione o nome</option>{data.users.filter(u=>['Professor','Administrador'].includes(u.role)&&u.status!=='Inativo').sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(u=><option value={u.id} key={u.id}>{u.name}</option>)}</select></>:<div className="logged-response"><ShieldCheck size={18}/><span>Respondendo como <b>{currentUser?.name}</b></span></div>}<div className="rsvp-buttons"><button className="yes-rsvp" onClick={()=>respond('yes')}>✅ Vou participar</button><button className="no-rsvp" onClick={()=>respond('no')}>❌ Não poderei participar</button></div></Modal>}
   {msg&&<div className="toast">{msg}</div>}<section className="content">{content}</section><footer>© 2026 Evangelização Infanto Juvenil · Todos os direitos reservados.</footer></main></div>
 }
@@ -596,7 +628,14 @@ function Schedules({data,admin,reload,toast}:{data:Data;admin:boolean;reload:()=
   const payload=(x:any)=>({date:x.date,adolescent_teacher:x.adolescentTeacher,younger_teacher:x.youngerTeacher,cleaning_helper:x.cleaningHelper,topic:x.topic,replacement_reason:x.replacementReason||''});
 
   const save=async()=>{if(!f.date||!f.adolescentTeacher||!f.youngerTeacher||!f.topic)return toast('Preencha data, professores e assunto.');const{error}=await supabase.from('sabado_schedules').insert(payload(f));if(error)return toast(error.message);setF(blank);setShowAdd(false);await reload();toast('Escala adicionada.')};
-  const update=async()=>{if(!edit)return;const{error}=await supabase.from('sabado_schedules').update(payload(edit)).eq('id',edit.id);if(error)return toast(error.message);setEdit(null);await reload();toast('Escala alterada.')};
+  const update=async()=>{
+    if(!edit)return;
+    const previous=data.schedules.find(s=>s.id===edit.id);
+    const teacherChanged=!!previous&&(previous.adolescentTeacher!==edit.adolescentTeacher||previous.youngerTeacher!==edit.youngerTeacher);
+    const{error}=await supabase.from('sabado_schedules').update(payload(edit)).eq('id',edit.id);
+    if(error)return toast(error.message);
+    setEdit(null);await reload();toast(teacherChanged?'Escala alterada e professores notificados.':'Escala alterada.');
+  };
   const del=async(s:Schedule)=>{if(!confirm('Excluir esta escala?'))return;const{error}=await supabase.from('sabado_schedules').delete().eq('id',s.id);if(error)return toast(error.message);await reload();toast('Escala excluída.')};
 
   const monthSaturdays=(ym:string)=>{
@@ -684,8 +723,21 @@ function Meetings({data,admin,reload,toast,setMeeting}:{data:Data;admin:boolean;
   const blank={title:'',date:'',time:'',location:'',notes:''};const[f,setF]=useState(blank),[edit,setEdit]=useState<Meeting|null>(null);
   const formatMeetingTime=(value:string)=>{const digits=value.replace(/\D/g,'').slice(0,4);if(digits.length<=2)return digits;return digits.slice(0,2)+':'+digits.slice(2)};
   const validMeetingTime=(value:string)=>!value||/^([01]\d|2[0-3]):[0-5]\d$/.test(value);
-  const save=async()=>{if(!f.title||!f.date)return toast('Informe título e data.');if(!validMeetingTime(f.time))return toast('Informe um horário válido no formato HH:MM.');const{error}=await supabase.from('sabado_meetings').insert({...f,time:f.time||null});if(error)return toast(error.message);setF(blank);await reload();toast('Reunião marcada.')};
-  const update=async()=>{if(!edit)return;if(!validMeetingTime(edit.time))return toast('Informe um horário válido no formato HH:MM.');const{error}=await supabase.from('sabado_meetings').update({title:edit.title,date:edit.date,time:edit.time||null,location:edit.location,notes:edit.notes,updated_at:new Date().toISOString()}).eq('id',edit.id);if(error)return toast(error.message);await supabase.from('sabado_meeting_responses').delete().eq('meeting_id',edit.id);setEdit(null);await reload();toast('Reunião reagendada.')};
+  const save=async()=>{
+    if(!f.title||!f.date)return toast('Informe título e data.');
+    if(!validMeetingTime(f.time))return toast('Informe um horário válido no formato HH:MM.');
+    const{error}=await supabase.from('sabado_meetings').insert({...f,time:f.time||null});
+    if(error)return toast(error.message);
+    setF(blank);await reload();toast('Reunião marcada e professores notificados.');
+  };
+  const update=async()=>{
+    if(!edit)return;
+    if(!validMeetingTime(edit.time))return toast('Informe um horário válido no formato HH:MM.');
+    const{error}=await supabase.from('sabado_meetings').update({title:edit.title,date:edit.date,time:edit.time||null,location:edit.location,notes:edit.notes,updated_at:new Date().toISOString()}).eq('id',edit.id);
+    if(error)return toast(error.message);
+    await supabase.from('sabado_meeting_responses').delete().eq('meeting_id',edit.id);
+    setEdit(null);await reload();toast('Reunião reagendada e professores notificados.');
+  };
   const del=async(m:Meeting)=>{if(!confirm('Excluir reunião "'+m.title+'"?'))return;const{error}=await supabase.from('sabado_meetings').delete().eq('id',m.id);if(error)return toast(error.message);await reload();toast('Reunião excluída.')};
   return <><Title t="Reuniões" s="Marque reuniões, acompanhe confirmações e avise todos os professores pelo sistema."/>{admin&&<div className="panel form data-form meeting-form"><h3><CalendarDays size={18}/> Nova reunião</h3><input placeholder="Título da reunião *" value={f.title} onChange={e=>setF({...f,title:e.target.value})}/><input type="date" value={f.date} onChange={e=>setF({...f,date:e.target.value})}/><input className="meeting-time-input" type="text" inputMode="numeric" maxLength={5} placeholder="Horário (HH:MM)" value={f.time} onChange={e=>setF({...f,time:formatMeetingTime(e.target.value)})}/><input placeholder="Local" value={f.location} onChange={e=>setF({...f,location:e.target.value})}/><input placeholder="Observações / pauta" value={f.notes} onChange={e=>setF({...f,notes:e.target.value})}/><button className="primary" onClick={save}><Bell size={17}/> Marcar e notificar professores</button></div>}
   <div className="panel"><h3>Reuniões marcadas</h3>{data.meetings.map(m=>{const yes=data.responses.filter(r=>r.meetingId===m.id&&r.status==='yes'),no=data.responses.filter(r=>r.meetingId===m.id&&r.status==='no');return <div className="meeting-card" key={m.id}><div className="meeting-main"><div><b>{m.title}</b><small>{fmt(m.date)} {m.time} {m.location&&'· '+m.location}</small></div><div className="meeting-actions"><button className="notice-action" onClick={()=>setMeeting(m)}>Responder</button>{admin&&<><button className="edit-icon" onClick={()=>setEdit({...m})}><Pencil size={16}/> Reagendar</button><button className="danger-icon" onClick={()=>del(m)}><Trash2 size={16}/> Excluir</button></>}</div></div><div className="rsvp-summary"><div className="rsvp-box yes"><b>✅ Vai participar</b>{yes.length?yes.map(r=><span key={r.id}>{r.userName}</span>):<small>Ninguém confirmou ainda.</small>}</div><div className="rsvp-box no"><b>❌ Não poderá</b>{no.length?no.map(r=><span key={r.id}>{r.userName}</span>):<small>Ninguém informou ausência.</small>}</div></div></div>})}{!data.meetings.length&&<Empty text="Nenhuma reunião marcada."/>}</div>
@@ -701,7 +753,16 @@ function AttendancePage({data,admin,reload,toast}:{data:Data;admin:boolean;reloa
   const counts:Record<string,number>={};
   data.attendance.filter(a=>Number(a.date.slice(0,4))===year).forEach(a=>a.entries.forEach(e=>{if(e.present)counts[e.studentId]=(counts[e.studentId]||0)+1}));
   const medal=(c:number)=>c>=20?'🥇':c>=15?'🥉':c>=10?'🥈':'';
-  const save=async()=>{if(!teacher)return toast('Selecione o professor responsável.');const entries=list.map(s=>({studentId:s.id,name:s.name,present:marks[s.id]===true}));const{error}=await supabase.from('sabado_attendance').insert({date,teacher,group_name:group,entries});if(error)return toast(error.message);setMarks({});await reload();toast('Chamada salva.')};
+  const save=async()=>{
+    if(!teacher)return toast('Selecione o professor responsável.');
+    if(!list.length)return toast('Não há alunos nesta turma para realizar a chamada.');
+    const unmarked=list.filter(s=>!Object.prototype.hasOwnProperty.call(marks,s.id));
+    if(unmarked.length)return toast(`Marque Sim ou Não para todos os alunos. Faltam ${unmarked.length}.`);
+    const entries=list.map(s=>({studentId:s.id,name:s.name,present:marks[s.id]===true}));
+    const{error}=await supabase.from('sabado_attendance').insert({date,teacher,group_name:group,entries});
+    if(error)return toast(error.message);
+    setMarks({});await reload();toast('Chamada salva.');
+  };
   return <><Title t="Chamada" s={admin?"Marque Sim ou Não e salve o registro da aula.":"Consulta de presença liberada. Para lançar uma chamada, solicite a permissão ao administrador."}/>{admin&&<div className="panel controls"><input type="date" value={date} onChange={e=>setDate(e.target.value)}/><select value={teacher} onChange={e=>setTeacher(e.target.value)}><option value="">Professor responsável</option>{teachers.map(t=><option key={t}>{t}</option>)}</select><select value={group} onChange={e=>setGroup(e.target.value)}><option>Todos os alunos</option><option>A definir</option><option>Menores</option><option>Adolescentes</option></select><select value={year} onChange={e=>setYear(Number(e.target.value))}>{years.map(y=><option key={y}>{y}</option>)}</select></div>}
   <div className="annual-summary"><b>Controle anual de presença — {year}</b><span>A contagem considera somente chamadas salvas neste ano. Ao iniciar um novo ano, a contagem começa automaticamente em 0, mantendo o histórico dos anos anteriores.</span><div className="medal-legend"><span>🥈 10 presenças</span><span>🥉 15 presenças</span><span>🥇 20 presenças ou mais</span></div></div>
   <div className="panel">{list.map(s=>{const c=counts[s.id]||0;return <div className="att" key={s.id}><div className="att-student"><div className="identity-line"><b>{s.name}</b><span className="text-separator">-</span><small>{s.group}</small></div><span className="presence-count">{year}: {c} presenças {medal(c)&&<span className="medal">{medal(c)}</span>}</span></div>{admin&&<div className="attendance-actions"><button type="button" aria-pressed={marks[s.id]===true} className={marks[s.id]===true?'yes selected':'yes'} onClick={()=>setMarks(prev=>({...prev,[s.id]:true}))}>Sim</button><button type="button" aria-pressed={marks[s.id]===false} className={marks[s.id]===false?'no selected':'no'} onClick={()=>setMarks(prev=>({...prev,[s.id]:false}))}>Não</button></div>}</div>})}{admin&&<button className="primary wide" onClick={save}>Salvar chamada</button>}</div></>
@@ -737,6 +798,7 @@ function Celebrations({data,admin,reload,toast}:{data:Data;admin:boolean;reload:
 }
 
 function UsersPage({data,admin,reload,toast}:{data:Data;admin:boolean;reload:()=>Promise<void>;toast:(s:string)=>void}){
+  const twoFactorPeriodLabel=`${data.settings.twoFactorIntervalValue} ${data.settings.twoFactorIntervalUnit==='days'?(data.settings.twoFactorIntervalValue===1?'dia':'dias'):(data.settings.twoFactorIntervalValue===1?'mês':'meses')}`;
   const blank={name:'',loginName:'',phone:'',group:'Geral',status:'Ativo'};
   const[f,setF]=useState(blank),[edit,setEdit]=useState<UserRec|null>(null),[permEdit,setPermEdit]=useState<UserRec|null>(null),[perm,setPerm]=useState<Record<string,boolean>>({...DEFAULT_TEACHER_PERMISSIONS});
   const visibleUsers=admin?data.users:data.users.filter(u=>u.role==='Professor'&&u.status!=='Inativo');
@@ -799,7 +861,7 @@ function UsersPage({data,admin,reload,toast}:{data:Data;admin:boolean;reload:()=
   };
 
   return <><Title t={admin?'Usuários e Permissões':'Professores'} s={admin?'Cada usuário possui senha individual e verificação obrigatória em duas etapas.':'Lista de professores ativos.'}/>
-  {admin&&<div className="panel access-instructions"><ShieldCheck size={22}/><div><b>Acesso protegido por duas etapas</b><span>Após criar a senha, cada professor deverá configurar um aplicativo autenticador. O sistema só libera o acesso depois de validar o código de 6 números. A verificação em duas etapas fica válida neste aparelho por <strong>3 meses</strong>.</span></div></div>}
+  {admin&&<div className="panel access-instructions"><ShieldCheck size={22}/><div><b>Acesso protegido por duas etapas</b><span>Após criar a senha, cada professor deverá configurar um aplicativo autenticador. O sistema só libera o acesso depois de validar o código de 6 números. A verificação em duas etapas fica válida neste aparelho por <strong>{twoFactorPeriodLabel}</strong>.</span></div></div>}
   {admin&&<div className="panel form user-create-form"><input placeholder="Nome completo *" value={f.name} onChange={e=>setF({...f,name:e.target.value,loginName:f.loginName||suggestedLogin(e.target.value)})}/><input placeholder="Usuário para login * — ex.: Fernanda" value={f.loginName} onChange={e=>setF({...f,loginName:e.target.value.replace(/\s+/g,'')})}/><input placeholder="Telefone / WhatsApp (opcional)" value={f.phone} onChange={e=>setF({...f,phone:e.target.value})}/><select value={f.group} onChange={e=>setF({...f,group:e.target.value})}><option>Geral</option><option>Menores</option><option>Adolescentes</option></select><select value={f.status} onChange={e=>setF({...f,status:e.target.value})}><option>Ativo</option><option>Inativo</option></select><button className="primary" onClick={save}><Plus size={17}/> Cadastrar usuário</button></div>}
   <div className="cards">{visibleUsers.map(u=><div className="person user-access-card" key={u.id}><div className="avatar">{u.name[0]}</div><div><b>{u.name}</b><small>{u.role} · {u.group} · {u.status}</small>{admin&&<><small><strong>Usuário:</strong> {u.loginName||'Não definido'} {u.phone&&' · '+u.phone}</small><div className="access-security-status"><span className={u.passwordCreated?'access-status ready':'access-status missing'}>{u.passwordCreated?'Senha criada':'Aguardando primeiro acesso'}</span>{u.passwordCreated&&<span className={u.twoFactorEnabled?'access-status ready':'access-status missing'}>{u.twoFactorEnabled?'✓ 2 etapas ativa':'2 etapas pendente'}</span>}</div></>}</div>{admin&&<div className="record-actions permission-actions"><button className="edit-icon" onClick={()=>openPermissions(u)}><Settings size={16}/> Permissões</button>{u.passwordCreated&&<button className="edit-icon" onClick={()=>resetAccess(u)}><KeyRound size={16}/> Nova senha</button>}{u.passwordCreated&&<button className="edit-icon security-reset-button" onClick={()=>resetTwoFactor(u)}><ShieldCheck size={16}/> Redefinir 2 etapas</button>}<button className="edit-icon" onClick={()=>setEdit({...u})}><Pencil size={16}/></button>{u.email?.toLowerCase()!==ADMIN_EMAIL&&<button className="danger-icon" onClick={()=>del(u)}><Trash2 size={16}/></button>}</div>}</div>)}</div>
   {admin&&edit&&<Modal title="Alterar usuário" close={()=>setEdit(null)}><input value={edit.name} onChange={e=>setEdit({...edit,name:e.target.value})} placeholder="Nome completo"/><input value={edit.loginName} placeholder="Usuário para login" onChange={e=>setEdit({...edit,loginName:e.target.value.replace(/\s+/g,'')})}/><input value={edit.phone} placeholder="Telefone / WhatsApp" onChange={e=>setEdit({...edit,phone:e.target.value})}/><select value={edit.group} onChange={e=>setEdit({...edit,group:e.target.value})}><option>Geral</option><option>Menores</option><option>Adolescentes</option></select><select value={edit.status} onChange={e=>setEdit({...edit,status:e.target.value})}><option>Ativo</option><option>Inativo</option></select><select value={edit.role} onChange={e=>setEdit({...edit,role:e.target.value})}><option>Professor</option><option>Administrador</option></select><button className="primary" onClick={update}>Salvar alterações</button></Modal>}

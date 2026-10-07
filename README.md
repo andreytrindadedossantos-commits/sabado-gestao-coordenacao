@@ -319,3 +319,28 @@ A correção já foi aplicada no Supabase. Registros criados antes desta correç
 - Relógio/data compactados para liberar mais espaço.
 - Ajuste extra para telas até 390px, incluindo Redmi A3.
 - Frontend alinhado com a regra de 2FA válida por 3 meses.
+
+
+## V60 — 2FA realmente a cada 3 meses no mesmo navegador
+
+A V59 ainda solicitava o código novamente após clicar em **Sair**, porque o botão encerrava a sessão usada também como referência da verificação.
+
+A V60 separa duas coisas:
+
+- **Sessão do sistema**: é encerrada normalmente ao clicar em **Sair**.
+- **Dispositivo verificado em duas etapas**: permanece reconhecido por **3 meses**.
+
+Assim, no mesmo navegador:
+1. Usuário faz login e confirma o código TOTP.
+2. O navegador fica confiável por 3 meses.
+3. Se clicar em **Sair** e entrar novamente, informa apenas usuário e senha.
+4. Ao completar 3 meses desde a última verificação TOTP, o código de 6 dígitos volta a ser obrigatório.
+5. A validade não é renovada apenas por entrar/sair; somente uma nova confirmação TOTP inicia outro período de 3 meses.
+
+O código também será solicitado antes dos 3 meses se:
+- o usuário limpar os dados/cookies/armazenamento do navegador;
+- usar outro navegador ou outro aparelho;
+- o Administrador usar **Redefinir 2 etapas**;
+- o Administrador liberar uma nova senha.
+
+Sessões válidas das versões V58/V59 são migradas automaticamente para o novo reconhecimento de dispositivo ao abrir a V60.

@@ -555,3 +555,6 @@ grant execute on function public.sabado_username_register(text,text) to anon,aut
 
 
 -- V58: verificação obrigatória em duas etapas TOTP aplicada pela migração `two_factor_auth_totp_v58` no Supabase.
+
+
+-- V60: dispositivo confiável por 3 meses para a verificação em duas etapas.

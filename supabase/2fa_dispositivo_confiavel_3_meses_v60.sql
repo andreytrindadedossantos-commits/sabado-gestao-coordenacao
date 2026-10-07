@@ -1,0 +1,11 @@
+-- V60 — Dispositivo confiável para 2FA por 3 meses
+-- Migração canônica já aplicada no Supabase:
+-- `trusted_device_three_months_v60`
+--
+-- Principais alterações:
+-- - private.sabado_2fa_trusted_devices
+-- - public.sabado_username_login_v2(username,password,device_token)
+-- - public.sabado_trust_current_device(session_token)
+-- - sabado_username_2fa_verify agora emite token do dispositivo por 3 meses
+-- - redefinir senha/2FA invalida os dispositivos confiáveis
+-- - logout comum NÃO invalida o dispositivo confiável

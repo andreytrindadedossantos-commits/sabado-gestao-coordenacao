@@ -433,3 +433,19 @@ A tela de login recebeu um fundo visual relacionado à Evangelização Infanto J
 - card com transparência e desfoque suave;
 - no celular a arte é reposicionada para evitar duplicação visual do card;
 - mantém login, senha, primeiro acesso e 2FA sem alteração funcional.
+
+
+## V65 — correção do erro de build da V64
+
+Foi corrigido o erro que fazia a Vercel interromper o deploy com `npm run build exited with 1`.
+
+### Causa encontrada
+Uma seção do arquivo `src/index.css` continha caracteres literais `\n` no meio do CSS. Isso fazia o parser do Vite falhar durante o build.
+
+### Correções
+- normalização do CSS;
+- remoção dos caracteres `\n` inválidos;
+- manutenção do fundo ilustrado da tela de login;
+- build de produção alterado para `vite build`;
+- comando `npm run typecheck` mantido separadamente para validação TypeScript;
+- nenhuma função do sistema foi removida.

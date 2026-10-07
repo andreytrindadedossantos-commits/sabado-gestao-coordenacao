@@ -1,0 +1,16 @@
+-- V62 — período da verificação em duas etapas por usuário
+-- Migração canônica já aplicada no Supabase:
+-- `per_user_two_factor_interval_v62`
+--
+-- Adiciona em public.sabado_users:
+--   two_factor_interval_value
+--   two_factor_interval_unit
+--
+-- Cria:
+--   private.sabado_2fa_interval_for_profile(profile_id)
+--   public.sabado_get_my_2fa_interval()
+--   public.sabado_update_my_2fa_interval(value, unit, device_token)
+--   public.sabado_reset_my_2fa_interval(device_token)
+--
+-- A configuração global do Administrador passa a ser apenas o padrão
+-- para usuários que ainda não escolheram um período próprio.

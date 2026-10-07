@@ -558,3 +558,9 @@ grant execute on function public.sabado_username_register(text,text) to anon,aut
 
 
 -- V60: dispositivo confiável por 3 meses para a verificação em duas etapas.
+
+
+-- V61: período de 2FA configurável pelo Administrador em dias ou meses.
+
+
+-- V62: período da verificação em duas etapas configurável individualmente por usuário.

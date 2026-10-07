@@ -10,6 +10,8 @@ import { QRCodeSVG } from 'qrcode.react';
 const ADMIN_EMAIL='andreytrindadedossantos@gmail.com';
 const LOGIN_VALIDITY_KEY='sabado_login_valid_until';
 const CUSTOM_SESSION_KEY='sabado_user_session_token';
+const TRUSTED_2FA_DEVICE_KEY='sabado_2fa_trusted_device_token';
+const TRUSTED_2FA_UNTIL_KEY='sabado_2fa_trusted_until';
 const LOGIN_VALIDITY_MS=90*24*60*60*1000;
 const renewLoginValidity=()=>localStorage.setItem(LOGIN_VALIDITY_KEY,String(Date.now()+LOGIN_VALIDITY_MS));
 const loginExpired=()=>{const until=Number(localStorage.getItem(LOGIN_VALIDITY_KEY)||0);return until>0&&Date.now()>until};
@@ -66,13 +68,13 @@ const PERMISSION_GROUPS:{title:string;view?:PermissionKey;manage?:PermissionKey}
 
 const normalizePermissions=(p:any):Record<string,boolean>=>({...DEFAULT_TEACHER_PERMISSIONS,...(p&&typeof p==='object'?p:{})});
 
-type Data={students:Student[];users:UserRec[];mothers:Mother[];schedules:Schedule[];attendance:Attendance[];events:EventItem[];meetings:Meeting[];responses:Response[];notifications:Notice[];settings:{name:string;subtitle:string}};
+type Data={students:Student[];users:UserRec[];mothers:Mother[];schedules:Schedule[];attendance:Attendance[];events:EventItem[];meetings:Meeting[];responses:Response[];notifications:Notice[];settings:{name:string;subtitle:string;twoFactorIntervalValue:number;twoFactorIntervalUnit:'days'|'months'}};
 
 const fmt=(d:string)=>d&&d.length>=10?d.slice(0,10).split('-').reverse().join('/'):'';
 const dateOnly=(d:any)=>d?String(d).slice(0,10):'';
 const formatMobileTime=(value:string)=>{const digits=value.replace(/\D/g,'').slice(0,4);if(digits.length<=2)return digits;return digits.slice(0,2)+':'+digits.slice(2)};
 const validMobileTime=(value:string)=>!value||/^([01]\d|2[0-3]):[0-5]\d$/.test(value);
-const empty:Data={students:[],users:[],mothers:[],schedules:[],attendance:[],events:[],meetings:[],responses:[],notifications:[],settings:{name:'Evangelização Infanto Juvenil',subtitle:'Gestão e Coordenação'}};
+const empty:Data={students:[],users:[],mothers:[],schedules:[],attendance:[],events:[],meetings:[],responses:[],notifications:[],settings:{name:'Evangelização Infanto Juvenil',subtitle:'Gestão e Coordenação',twoFactorIntervalValue:3,twoFactorIntervalUnit:'months'}};
 
 async function loadAll():Promise<Data>{
   const [s,u,m,sc,a,e,me,r,n,se]=await Promise.all([
@@ -99,7 +101,7 @@ async function loadAll():Promise<Data>{
     meetings:(me.data||[]).map((x:any)=>({id:x.id,title:x.title,date:dateOnly(x.date),time:x.time?String(x.time).slice(0,5):'',location:x.location||'',notes:x.notes||''})),
     responses:(r.data||[]).map((x:any)=>({id:x.id,meetingId:x.meeting_id,userId:x.user_id,userName:x.user_name,status:x.status})),
     notifications:(n.data||[]).map((x:any)=>({id:x.id,title:x.title,body:x.body,date:x.date,kind:x.kind,meetingId:x.meeting_id||undefined})),
-    settings:se.data?{name:se.data.name,subtitle:se.data.subtitle}:empty.settings
+    settings:se.data?{name:se.data.name,subtitle:se.data.subtitle,twoFactorIntervalValue:Number(se.data.two_factor_interval_value||3),twoFactorIntervalUnit:se.data.two_factor_interval_unit==='days'?'days':'months'}:empty.settings
   };
 }
 
@@ -133,6 +135,25 @@ function App(){
     setSessionEmail(mapped.loginName||mapped.name);setAccessError('');
     const expiresAt=new Date(data.expires_at).getTime();
     if(Number.isFinite(expiresAt))localStorage.setItem(LOGIN_VALIDITY_KEY,String(expiresAt));
+
+    const trustedUntil=Number(localStorage.getItem(TRUSTED_2FA_UNTIL_KEY)||0);
+    if(trustedUntil>0&&Date.now()>=trustedUntil){
+      localStorage.removeItem(TRUSTED_2FA_DEVICE_KEY);
+      localStorage.removeItem(TRUSTED_2FA_UNTIL_KEY);
+    }
+
+    if(!localStorage.getItem(TRUSTED_2FA_DEVICE_KEY)){
+      try{
+        const{data:trusted}=await supabase.rpc('sabado_trust_current_device',{p_token:token});
+        if(trusted?.ok&&trusted?.trusted_device_token){
+          localStorage.setItem(TRUSTED_2FA_DEVICE_KEY,trusted.trusted_device_token);
+          if(trusted.trusted_device_expires_at){
+            localStorage.setItem(TRUSTED_2FA_UNTIL_KEY,String(new Date(trusted.trusted_device_expires_at).getTime()));
+          }
+        }
+      }catch{}
+    }
+
     await reload();
     setAuthReady(true);
   };
@@ -222,6 +243,7 @@ function App(){
     ['Datas Comemorativas','celebrations',PartyPopper,'view_celebrations']
   ] as const;
   const nav=navConfig.filter(([, , ,perm])=>can(perm as PermissionKey));
+  const personal=[['Minha Segurança','security',ShieldCheck]] as const;
   const extra=admin?[['Auditoria','audit',History],['Configurações','settings',Settings],['Administração','admin',UserCog]] as const:[];
 
   const visibleNotifications=data.notifications.filter(n=>!hiddenNotices.includes(n.id));
@@ -276,6 +298,7 @@ function App(){
     page==='calendar'&&can('view_calendar')?<Calendar data={data} admin={can('manage_calendar')} reload={reload} toast={toast}/>:
     page==='celebrations'&&can('view_celebrations')?<Celebrations data={data} admin={can('manage_celebrations')} reload={reload} toast={toast}/>:
     page==='users'&&can('view_users')?<UsersPage data={data} admin={admin} reload={reload} toast={toast}/>:
+    page==='security'?<MySecurityPage currentUser={currentUser} toast={toast}/>:
     page==='audit'&&admin?<AuditPage/>:
     page==='settings'&&admin?<SettingsPage data={data} reload={reload} toast={toast}/>:
     page==='admin'&&admin?<AdminPage data={data} setPage={setPage}/>:
@@ -283,7 +306,7 @@ function App(){
 
   const doSignOut=async()=>{const token=localStorage.getItem(CUSTOM_SESSION_KEY);if(token)await supabase.rpc('sabado_username_logout',{p_token:token});localStorage.removeItem(CUSTOM_SESSION_KEY);localStorage.removeItem(LOGIN_VALIDITY_KEY);await supabase.auth.signOut();setAdmin(false);setCurrentUser(null);setSessionEmail('');setData(empty);setPage('home')};
 
-  return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><div className="brand-logo"><BookOpen size={26}/><span className="brand-heart">♥</span></div><div className="brand-copy"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}<div className="user-session-card"><ShieldCheck size={16}/><div><b>{currentUser?.name||sessionEmail}</b><small>{admin?'Administrador':'Professor'}</small></div></div></aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><button className="top-icon-btn theme-toggle" title={dark?'Usar tema claro':'Usar tema cinza escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button><button className="ghost-btn" onClick={doSignOut}>Sair</button></div></header>
+  return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><div className="brand-logo"><BookOpen size={26}/><span className="brand-heart">♥</span></div><div className="brand-copy"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...personal,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}<div className="user-session-card"><ShieldCheck size={16}/><div><b>{currentUser?.name||sessionEmail}</b><small>{admin?'Administrador':'Professor'}</small></div></div></aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><button className="top-icon-btn theme-toggle" title={dark?'Usar tema claro':'Usar tema cinza escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button><button className="ghost-btn" onClick={doSignOut}>Sair</button></div></header>
   {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações</b><div className="notice-tools"><button className="read-all" onClick={()=>{const ids=visibleNotifications.map(n=>n.id);const next=[...new Set([...read,...ids])];setRead(next);localStorage.setItem('readNotices',JSON.stringify(next))}}>✓ Marcar todas como lidas</button><button className="read-all" onClick={enableDeviceNotifications}>🔔 Ativar no dispositivo</button>{visibleNotifications.length>0&&<button className="delete-notifications-btn" onClick={clearNotices}><Trash2 size={15}/> Excluir notificações</button>}<button className="icon-close" onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div></div>{visibleNotifications.map(n=><div className={read.includes(n.id)?'notice-item read':'notice-item'} key={n.id}><div className="notice-item-head"><b>{n.title}</b><button className="notice-delete" title="Excluir esta notificação" onClick={()=>deleteNotice(n.id)}><Trash2 size={15}/></button></div><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}</div>)}{!visibleNotifications.length&&<Empty text="Nenhuma notificação ainda."/>}</div>}
   {meetingNotice&&<Modal title="Confirmar participação" close={()=>setMeetingNotice(null)}>{admin?<><label>Responder como</label><select value={rsvpUserId} onChange={e=>setRsvpUserId(e.target.value)}><option value="">Selecione o nome</option>{data.users.filter(u=>['Professor','Administrador'].includes(u.role)&&u.status!=='Inativo').sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(u=><option value={u.id} key={u.id}>{u.name}</option>)}</select></>:<div className="logged-response"><ShieldCheck size={18}/><span>Respondendo como <b>{currentUser?.name}</b></span></div>}<div className="rsvp-buttons"><button className="yes-rsvp" onClick={()=>respond('yes')}>✅ Vou participar</button><button className="no-rsvp" onClick={()=>respond('no')}>❌ Não poderei participar</button></div></Modal>}
   {msg&&<div className="toast">{msg}</div>}<section className="content">{content}</section><footer>© 2026 Evangelização Infanto Juvenil · Todos os direitos reservados.</footer></main></div>
@@ -295,6 +318,15 @@ function LoginPage({adminOnly:_adminOnly,onSuccess:_onSuccess}:{adminOnly:boolea
   const finishCustomLogin=(data:any)=>{
     localStorage.setItem(CUSTOM_SESSION_KEY,data.token);
     localStorage.setItem(LOGIN_VALIDITY_KEY,String(new Date(data.expires_at).getTime()));
+
+    if(data?.trusted_device_token){
+      localStorage.setItem(TRUSTED_2FA_DEVICE_KEY,data.trusted_device_token);
+    }
+    const trustedUntilValue=data?.trusted_device_expires_at||data?.trusted_until;
+    if(trustedUntilValue){
+      localStorage.setItem(TRUSTED_2FA_UNTIL_KEY,String(new Date(trustedUntilValue).getTime()));
+    }
+
     window.location.href='/';
   };
 
@@ -350,8 +382,17 @@ function LoginPage({adminOnly:_adminOnly,onSuccess:_onSuccess}:{adminOnly:boolea
     if(mode==='signup'&&password!==confirmPassword)return setMsg('As senhas não conferem.');
     setPending(true);
     try{
-      const rpcName=mode==='signup'?'sabado_username_register':'sabado_username_login';
-      const{data,error}=await supabase.rpc(rpcName,{p_username:clean,p_password:password});
+      let trustedDeviceToken=localStorage.getItem(TRUSTED_2FA_DEVICE_KEY)||'';
+      const trustedUntil=Number(localStorage.getItem(TRUSTED_2FA_UNTIL_KEY)||0);
+      if(trustedUntil>0&&Date.now()>=trustedUntil){
+        localStorage.removeItem(TRUSTED_2FA_DEVICE_KEY);
+        localStorage.removeItem(TRUSTED_2FA_UNTIL_KEY);
+        trustedDeviceToken='';
+      }
+
+      const{data,error}=mode==='signup'
+        ?await supabase.rpc('sabado_username_register',{p_username:clean,p_password:password})
+        :await supabase.rpc('sabado_username_login_v2',{p_username:clean,p_password:password,p_device_token:trustedDeviceToken});
       if(error)return setMsg(error.message||'Não foi possível concluir o acesso.');
       if(data?.error)return setMsg(data.error);
 
@@ -364,6 +405,15 @@ function LoginPage({adminOnly:_adminOnly,onSuccess:_onSuccess}:{adminOnly:boolea
         return;
       }
 
+      if(data?.token){
+        if(data?.can_choose_admin===true){
+          setRoleChoice(data);
+          return;
+        }
+        finishCustomLogin(data);
+        return;
+      }
+
       if(data?.two_factor_required===true&&data?.challenge_token){
         setPassword('');
         setTwoFactor(data);
@@ -371,7 +421,7 @@ function LoginPage({adminOnly:_adminOnly,onSuccess:_onSuccess}:{adminOnly:boolea
         return;
       }
 
-      setMsg('Não foi possível iniciar a verificação em duas etapas.');
+      setMsg('Não foi possível iniciar o acesso.');
     }catch(e:any){setMsg(e.message||'Não foi possível concluir o acesso.')}
     finally{setPending(false)}
   };
@@ -397,7 +447,7 @@ function LoginPage({adminOnly:_adminOnly,onSuccess:_onSuccess}:{adminOnly:boolea
           <div className="two-factor-step"><span>3</span><div><b>Digite o código de 6 números</b><small>O código muda aproximadamente a cada 30 segundos.</small></div></div>
         </div>
       </>:<>
-        <p className="login-subtitle">Abra seu aplicativo autenticador e informe o código atual para concluir o acesso.</p>
+        <p className="login-subtitle">Abra seu aplicativo autenticador e informe o código atual. Depois de validar, este navegador ficará autorizado pelo período configurado em Minha Segurança.</p>
         <div className="two-factor-verified-icon"><Smartphone size={34}/><ShieldCheck size={22}/></div>
       </>}
       <input className="two-factor-code" value={twoFactorCode} onChange={e=>setTwoFactorCode(e.target.value.replace(/\D/g,'').slice(0,6))} onKeyDown={e=>{if(e.key==='Enter')verifyTwoFactor()}} inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="000000"/>
@@ -407,7 +457,7 @@ function LoginPage({adminOnly:_adminOnly,onSuccess:_onSuccess}:{adminOnly:boolea
     </div></div>
   }
 
-  return <div className="login-page"><div className="login-card teacher-login"><div className="login-brand"><div className="brand-logo"><BookOpen size={28}/><span className="brand-heart">♥</span></div><div><b>Evangelização Infanto Juvenil</b><span>Gestão e Coordenação</span></div></div><h1>{mode==='login'?'Entrar no sistema':'Criar minha senha'}</h1><p className="login-subtitle">{mode==='login'?'Digite seu usuário e senha. O acesso protegido por duas etapas será solicitado antes de entrar.':'No primeiro acesso, informe o seu usuário e crie uma senha com pelo menos 6 caracteres.'}</p>{mode==='login'&&<div className="first-access-help"><b>Primeiro acesso:</b> clique em <strong>"Primeiro acesso? Criar senha"</strong>, crie sua senha e, no login seguinte, configure o <strong>aplicativo autenticador</strong>.</div>}<input value={identity} onChange={e=>setIdentity(e.target.value)} type="text" autoCapitalize="none" autoComplete="username" placeholder="Usuário — ex.: Fernanda"/><div className="password-field"><input value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')go()}} type={showPassword?'text':'password'} autoComplete={mode==='login'?'current-password':'new-password'} placeholder={mode==='login'?'Senha':'Crie uma senha'}/><button type="button" className="password-toggle" aria-label={showPassword?'Ocultar senha':'Mostrar senha'} title={showPassword?'Ocultar senha':'Mostrar senha'} onClick={()=>setShowPassword(v=>!v)}>{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></div>{mode==='signup'&&<div className="password-field"><input value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} type={showConfirmPassword?'text':'password'} autoComplete="new-password" placeholder="Confirmar senha"/><button type="button" className="password-toggle" aria-label={showConfirmPassword?'Ocultar senha':'Mostrar senha'} title={showConfirmPassword?'Ocultar senha':'Mostrar senha'} onClick={()=>setShowConfirmPassword(v=>!v)}>{showConfirmPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></div>}<button className="primary login-main-button" disabled={pending} onClick={go}>{pending?'Aguarde...':mode==='login'?<><LogIn size={18}/> Entrar</>:<><KeyRound size={18}/> Criar senha</>}</button><button className="link-btn" disabled={pending} onClick={()=>{setMode(mode==='login'?'signup':'login');setPassword('');setConfirmPassword('');setShowPassword(false);setShowConfirmPassword(false);setMsg('')}}>{mode==='login'?'Primeiro acesso? Criar senha':'Já criei minha senha'}</button>{mode==='login'&&<button className="link-btn" onClick={()=>setMsg('Se esqueceu a senha ou perdeu o autenticador, peça ao Administrador para redefinir o acesso.')}>Esqueci minha senha / perdi o autenticador</button>}{msg&&<small className="login-message">{msg}</small>}</div>{roleChoice&&<Modal title="Como deseja entrar?" close={()=>setRoleChoice(null)}><p className="role-choice-text">Seu usuário <b>Andrey</b> possui dois tipos de acesso. Escolha como deseja entrar agora:</p><div className="role-choice-buttons"><button className="role-choice professor" disabled={pending} onClick={()=>chooseRole('professor')}><Users size={22}/><span><b>Professor</b><small>Acesso conforme as permissões de professor</small></span></button><button className="role-choice admin" disabled={pending} onClick={()=>chooseRole('admin')}><ShieldCheck size={22}/><span><b>Administrador</b><small>Acesso completo ao sistema</small></span></button></div></Modal>}</div>
+  return <div className="login-page"><div className="login-card teacher-login"><div className="login-brand"><div className="brand-logo"><BookOpen size={28}/><span className="brand-heart">♥</span></div><div><b>Evangelização Infanto Juvenil</b><span>Gestão e Coordenação</span></div></div><h1>{mode==='login'?'Entrar no sistema':'Criar minha senha'}</h1><p className="login-subtitle">{mode==='login'?'Digite seu usuário e senha. O código de duas etapas será solicitado novamente quando vencer o período configurado para a sua conta.':'No primeiro acesso, informe o seu usuário e crie uma senha com pelo menos 6 caracteres.'}</p>{mode==='login'&&<div className="first-access-help"><b>Primeiro acesso:</b> clique em <strong>"Primeiro acesso? Criar senha"</strong>, crie sua senha e, no login seguinte, configure o <strong>aplicativo autenticador</strong>.</div>}<input value={identity} onChange={e=>setIdentity(e.target.value)} type="text" autoCapitalize="none" autoComplete="username" placeholder="Usuário — ex.: Fernanda"/><div className="password-field"><input value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')go()}} type={showPassword?'text':'password'} autoComplete={mode==='login'?'current-password':'new-password'} placeholder={mode==='login'?'Senha':'Crie uma senha'}/><button type="button" className="password-toggle" aria-label={showPassword?'Ocultar senha':'Mostrar senha'} title={showPassword?'Ocultar senha':'Mostrar senha'} onClick={()=>setShowPassword(v=>!v)}>{showPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></div>{mode==='signup'&&<div className="password-field"><input value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} type={showConfirmPassword?'text':'password'} autoComplete="new-password" placeholder="Confirmar senha"/><button type="button" className="password-toggle" aria-label={showConfirmPassword?'Ocultar senha':'Mostrar senha'} title={showConfirmPassword?'Ocultar senha':'Mostrar senha'} onClick={()=>setShowConfirmPassword(v=>!v)}>{showConfirmPassword?<EyeOff size={18}/>:<Eye size={18}/>}</button></div>}<button className="primary login-main-button" disabled={pending} onClick={go}>{pending?'Aguarde...':mode==='login'?<><LogIn size={18}/> Entrar</>:<><KeyRound size={18}/> Criar senha</>}</button><button className="link-btn" disabled={pending} onClick={()=>{setMode(mode==='login'?'signup':'login');setPassword('');setConfirmPassword('');setShowPassword(false);setShowConfirmPassword(false);setMsg('')}}>{mode==='login'?'Primeiro acesso? Criar senha':'Já criei minha senha'}</button>{mode==='login'&&<button className="link-btn" onClick={()=>setMsg('Se esqueceu a senha ou perdeu o autenticador, peça ao Administrador para redefinir o acesso.')}>Esqueci minha senha / perdi o autenticador</button>}{msg&&<small className="login-message">{msg}</small>}</div>{roleChoice&&<Modal title="Como deseja entrar?" close={()=>setRoleChoice(null)}><p className="role-choice-text">Seu usuário <b>Andrey</b> possui dois tipos de acesso. Escolha como deseja entrar agora:</p><div className="role-choice-buttons"><button className="role-choice professor" disabled={pending} onClick={()=>chooseRole('professor')}><Users size={22}/><span><b>Professor</b><small>Acesso conforme as permissões de professor</small></span></button><button className="role-choice admin" disabled={pending} onClick={()=>chooseRole('admin')}><ShieldCheck size={22}/><span><b>Administrador</b><small>Acesso completo ao sistema</small></span></button></div></Modal>}</div>
 }
 
 function AccessBlocked({message,email}:{message:string;email:string}){
@@ -719,7 +769,176 @@ function AuditPage(){
   <div className="panel audit-panel">{loading?<div className="empty">Carregando auditoria...</div>:filtered.map(log=><div className="audit-row" key={log.id}><div className={'audit-action '+log.action}>{actionLabel(log.action)}</div><div className="audit-main"><b>{log.entityType}: {log.entityName||'Sem identificação'}</b><span><strong>{log.actorName}</strong>{log.actorEmail&&log.actorEmail!==log.actorName?' · '+log.actorEmail:''}</span><small>{new Date(log.createdAt).toLocaleString('pt-BR')}</small></div><button className="edit-icon" onClick={()=>setOpen(open===log.id?null:log.id)}>{open===log.id?'Ocultar':'Detalhes'}</button>{open===log.id&&<div className="audit-details">{log.beforeData&&<div><b>Antes</b><pre>{pretty(log.beforeData)}</pre></div>}{log.afterData&&<div><b>Depois</b><pre>{pretty(log.afterData)}</pre></div>}</div>}</div>)}{!loading&&!filtered.length&&<Empty text="Nenhum registro de auditoria encontrado."/>}</div></>
 }
 
-function SettingsPage({data,reload,toast}:{data:Data;reload:()=>Promise<void>;toast:(s:string)=>void}){const[f,setF]=useState(data.settings);const save=async()=>{const{error}=await supabase.from('sabado_settings').update({...f,updated_at:new Date().toISOString()}).eq('id',1);if(error)return toast(error.message);await reload();toast('Configurações salvas.')};return <><Title t="Configurações" s="Personalize o sistema."/><div className="panel form"><input value={f.name} onChange={e=>setF({...f,name:e.target.value})}/><input value={f.subtitle} onChange={e=>setF({...f,subtitle:e.target.value})}/><button className="primary" onClick={save}>Salvar</button></div></>}
+function MySecurityPage({currentUser,toast}:{currentUser:UserRec|null;toast:(s:string)=>void}){
+  const[value,setValue]=useState(3);
+  const[unit,setUnit]=useState<'days'|'months'>('months');
+  const[defaultValue,setDefaultValue]=useState(3);
+  const[defaultUnit,setDefaultUnit]=useState<'days'|'months'>('months');
+  const[custom,setCustom]=useState(false);
+  const[loading,setLoading]=useState(true);
+  const[saving,setSaving]=useState(false);
+
+  const load=async()=>{
+    setLoading(true);
+    try{
+      const{data,error}=await supabase.rpc('sabado_get_my_2fa_interval');
+      if(error)return toast(error.message);
+      if(!data?.ok)return toast(data?.error||'Não foi possível carregar sua configuração.');
+      setValue(Number(data.value||3));
+      setUnit(data.unit==='days'?'days':'months');
+      setDefaultValue(Number(data.default_value||3));
+      setDefaultUnit(data.default_unit==='days'?'days':'months');
+      setCustom(data.custom===true);
+    }finally{
+      setLoading(false);
+    }
+  };
+
+  useEffect(()=>{load()},[]);
+
+  const updateLocalExpiry=(trustedUntil:any)=>{
+    if(!trustedUntil)return;
+    const until=new Date(trustedUntil).getTime();
+    if(!Number.isFinite(until))return;
+    if(until<=Date.now()){
+      localStorage.removeItem(TRUSTED_2FA_DEVICE_KEY);
+      localStorage.removeItem(TRUSTED_2FA_UNTIL_KEY);
+      return;
+    }
+    localStorage.setItem(TRUSTED_2FA_UNTIL_KEY,String(until));
+  };
+
+  const save=async()=>{
+    const clean=Math.floor(Number(value));
+    if(!Number.isFinite(clean)||clean<1)return toast('Informe um período válido.');
+    if(unit==='days'&&clean>365)return toast('O máximo é 365 dias.');
+    if(unit==='months'&&clean>24)return toast('O máximo é 24 meses.');
+
+    setSaving(true);
+    try{
+      const deviceToken=localStorage.getItem(TRUSTED_2FA_DEVICE_KEY)||'';
+      const{data,error}=await supabase.rpc('sabado_update_my_2fa_interval',{
+        p_value:clean,
+        p_unit:unit,
+        p_device_token:deviceToken
+      });
+      if(error)return toast(error.message);
+      if(!data?.ok)return toast(data?.error||'Não foi possível salvar sua configuração.');
+      updateLocalExpiry(data.trusted_until);
+      setValue(Number(data.value||clean));
+      setUnit(data.unit==='days'?'days':'months');
+      setCustom(true);
+      toast('Seu período de verificação em duas etapas foi salvo.');
+    }finally{
+      setSaving(false);
+    }
+  };
+
+  const useDefault=async()=>{
+    if(!confirm('Voltar a usar o período padrão definido pelo Administrador?'))return;
+    setSaving(true);
+    try{
+      const deviceToken=localStorage.getItem(TRUSTED_2FA_DEVICE_KEY)||'';
+      const{data,error}=await supabase.rpc('sabado_reset_my_2fa_interval',{p_device_token:deviceToken});
+      if(error)return toast(error.message);
+      if(!data?.ok)return toast(data?.error||'Não foi possível restaurar o período padrão.');
+      updateLocalExpiry(data.trusted_until);
+      setValue(Number(data.value||defaultValue));
+      setUnit(data.unit==='days'?'days':'months');
+      setCustom(false);
+      toast('Você voltou a usar o período padrão do sistema.');
+    }finally{
+      setSaving(false);
+    }
+  };
+
+  const label=(v:number,u:'days'|'months')=>u==='days'?`${v} dia${v===1?'':'s'}`:`${v} ${v===1?'mês':'meses'}`;
+
+  return <><Title t="Minha Segurança" s="Defina com que frequência este navegador deve solicitar novamente o código da verificação em duas etapas."/>
+    <div className="panel my-security-panel">
+      <div className="my-security-head"><ShieldCheck size={26}/><div><b>{currentUser?.name||'Minha conta'}</b><span>Verificação em duas etapas ativa</span></div></div>
+
+      {loading?<div className="empty">Carregando sua configuração...</div>:<>
+        <div className="security-current-rule"><ShieldCheck size={17}/><span>Seu período atual: <strong>{label(value,unit)}</strong>{custom?' · configuração pessoal':' · usando o padrão do sistema'}.</span></div>
+
+        <div className="two-factor-interval-form">
+          <label><span>Solicitar o código novamente a cada</span><input type="number" min="1" max={unit==='days'?365:24} value={value} onChange={e=>setValue(Number(e.target.value))}/></label>
+          <label><span>Unidade</span><select value={unit} onChange={e=>setUnit(e.target.value as 'days'|'months')}><option value="days">Dias</option><option value="months">Meses</option></select></label>
+        </div>
+
+        <div className="my-security-actions">
+          <button className="primary" disabled={saving} onClick={save}><Save size={18}/>{saving?'Salvando...':'Salvar meu período'}</button>
+          {custom&&<button className="edit-icon" disabled={saving} onClick={useDefault}>Usar padrão do sistema</button>}
+        </div>
+
+        <div className="security-default-info">
+          <span>Padrão atual do sistema: <strong>{label(defaultValue,defaultUnit)}</strong>.</span>
+          <small>Esta configuração é individual. Alterar seu período não muda o período dos outros professores.</small>
+        </div>
+
+        <small className="settings-help">Ao clicar em <strong>Sair</strong>, o navegador continua reconhecido até o seu prazo vencer. O código poderá ser solicitado antes se você limpar os dados do navegador, usar outro aparelho/navegador ou se o Administrador redefinir sua verificação em duas etapas.</small>
+      </>}
+    </div>
+  </>
+}
+
+function SettingsPage({data,reload,toast}:{data:Data;reload:()=>Promise<void>;toast:(s:string)=>void}){
+  const[f,setF]=useState(data.settings);
+  const[saving,setSaving]=useState(false);
+
+  const save=async()=>{
+    const value=Math.floor(Number(f.twoFactorIntervalValue));
+    if(!Number.isFinite(value)||value<1)return toast('Informe um período válido.');
+    if(f.twoFactorIntervalUnit==='days'&&value>365)return toast('O máximo é 365 dias.');
+    if(f.twoFactorIntervalUnit==='months'&&value>24)return toast('O máximo é 24 meses.');
+
+    setSaving(true);
+    try{
+      const{error:brandingError}=await supabase.from('sabado_settings').update({
+        name:f.name,
+        subtitle:f.subtitle,
+        updated_at:new Date().toISOString()
+      }).eq('id',1);
+      if(brandingError)return toast(brandingError.message);
+
+      const{data:security,error:securityError}=await supabase.rpc('sabado_update_2fa_interval',{
+        p_value:value,
+        p_unit:f.twoFactorIntervalUnit
+      });
+      if(securityError)return toast(securityError.message);
+      if(!security?.ok)return toast(security?.error||'Não foi possível alterar o período da verificação.');
+
+      await reload();
+      toast('Configurações salvas. O novo período padrão foi aplicado aos usuários que ainda usam o padrão.');
+    }finally{
+      setSaving(false);
+    }
+  };
+
+  const unitLabel=f.twoFactorIntervalUnit==='days'?'dia(s)':'mês(es)';
+
+  return <><Title t="Configurações" s="Personalize o sistema e a segurança dos acessos."/>
+    <div className="panel settings-section">
+      <h3>Identidade do sistema</h3>
+      <div className="form">
+        <label><span>Nome do sistema</span><input value={f.name} onChange={e=>setF({...f,name:e.target.value})}/></label>
+        <label><span>Subtítulo</span><input value={f.subtitle} onChange={e=>setF({...f,subtitle:e.target.value})}/></label>
+      </div>
+    </div>
+
+    <div className="panel settings-section security-settings">
+      <div className="security-settings-title"><ShieldCheck size={22}/><div><h3>Período padrão da verificação em duas etapas</h3><p>Este período será usado apenas para usuários que ainda não escolheram uma configuração própria em Minha Segurança.</p></div></div>
+      <div className="two-factor-interval-form">
+        <label><span>Solicitar novamente a cada</span><input type="number" min="1" max={f.twoFactorIntervalUnit==='days'?365:24} value={f.twoFactorIntervalValue} onChange={e=>setF({...f,twoFactorIntervalValue:Number(e.target.value)})}/></label>
+        <label><span>Unidade</span><select value={f.twoFactorIntervalUnit} onChange={e=>setF({...f,twoFactorIntervalUnit:e.target.value as 'days'|'months'})}><option value="days">Dias</option><option value="months">Meses</option></select></label>
+      </div>
+      <div className="security-current-rule"><ShieldCheck size={17}/><span>Padrão do sistema: solicitar o código de verificação a cada <strong>{f.twoFactorIntervalValue} {unitLabel}</strong>.</span></div>
+      <small className="settings-help">Cada usuário pode substituir este padrão em <strong>Minha Segurança</strong>. Clicar em Sair não apaga a autorização do navegador.</small>
+    </div>
+
+    <button className="primary settings-save" disabled={saving} onClick={save}><Save size={18}/>{saving?'Salvando...':'Salvar configurações'}</button>
+  </>
+}
 
 function AdminPage({data,setPage}:{data:Data;setPage:(p:string)=>void}){return <><div className="hero"><p>Área exclusiva</p><h1>Painel do Administrador</h1><span>{ADMIN_EMAIL}</span></div><div className="grid"><Card t="Alunos" v={data.students.length}/><Card t="Professores" v={data.users.length}/><Card t="Chamadas" v={data.attendance.length}/><Card t="Notificações" v={data.notifications.length}/></div><div className="panel admin-links"><button className="primary" onClick={()=>setPage('users')}>Professores e Acessos</button><button className="primary" onClick={()=>setPage('history')}>Histórico de Chamadas</button><button className="primary" onClick={()=>setPage('audit')}>Registro de Auditoria</button><button className="primary" onClick={()=>setPage('settings')}>Configurações</button></div></>}
 

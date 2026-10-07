@@ -1,0 +1,14 @@
+-- V61 — período configurável para verificação em duas etapas.
+-- Migração canônica já aplicada no Supabase: `configurable_two_factor_interval_v61`.
+--
+-- Adiciona em public.sabado_settings:
+--   two_factor_interval_value
+--   two_factor_interval_unit ('days' ou 'months')
+--
+-- Cria:
+--   private.sabado_2fa_interval()
+--   public.sabado_update_2fa_interval(value, unit)
+--
+-- A expiração dos dispositivos confiáveis passa a usar a configuração escolhida
+-- pelo Administrador, e os dispositivos existentes são recalculados quando a
+-- configuração é alterada.

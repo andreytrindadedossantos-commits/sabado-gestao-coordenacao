@@ -344,3 +344,59 @@ O código também será solicitado antes dos 3 meses se:
 - o Administrador liberar uma nova senha.
 
 Sessões válidas das versões V58/V59 são migradas automaticamente para o novo reconhecimento de dispositivo ao abrir a V60.
+
+
+## V61 — período da verificação configurável pelo Administrador
+
+A tela **Configurações** agora possui a seção **Verificação em duas etapas**.
+
+O Administrador pode escolher:
+- quantidade;
+- unidade em **Dias** ou **Meses**.
+
+Exemplos:
+- 7 dias;
+- 30 dias;
+- 1 mês;
+- 3 meses;
+- 6 meses;
+- 12 meses.
+
+Limites de segurança:
+- 1 a 365 dias;
+- 1 a 24 meses.
+
+### Correção importante
+Esta versão também corrige o comportamento que fazia o código ser solicitado novamente depois de clicar em **Sair**.
+
+A sessão do sistema e o reconhecimento do navegador agora são independentes:
+- **Sair** encerra somente a sessão.
+- A autorização da verificação em duas etapas permanece no mesmo navegador até o período configurado vencer.
+- O código também volta a ser solicitado se os dados do navegador forem apagados, se outro navegador/aparelho for usado ou se o Administrador redefinir a 2FA.
+
+Quem já estiver com uma sessão válida ao publicar a V61 terá o navegador migrado automaticamente para o novo reconhecimento, quando possível.
+
+
+## V62 — cada usuário escolhe o próprio período da 2FA
+
+Foi adicionada a página **Minha Segurança**, disponível para todos os usuários autenticados.
+
+Cada professor pode escolher individualmente:
+- quantidade;
+- unidade em **Dias** ou **Meses**.
+
+Limites:
+- 1 a 365 dias;
+- 1 a 24 meses.
+
+Exemplos:
+- Ana: 30 dias;
+- Fernanda: 3 meses;
+- Camila: 6 meses;
+- Andrey: 12 meses.
+
+A configuração do Administrador em **Configurações** passa a funcionar como **padrão do sistema**. O usuário pode escolher seu próprio período ou clicar em **Usar padrão do sistema**.
+
+Alterar o período de uma pessoa não altera o período dos demais usuários.
+
+O botão **Sair** continua encerrando somente a sessão do sistema. O reconhecimento da verificação em duas etapas permanece no mesmo navegador até vencer o período individual configurado.

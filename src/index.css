@@ -1166,3 +1166,45 @@ html.dark .two-factor-qr{background:#fff!important}
   .two-factor-code{font-size:21px!important;letter-spacing:6px!important}
 }
 \n\n/* V59 — cabeçalho compacto no celular */\n@media(max-width:700px){\n  header{height:58px!important;min-height:58px!important;padding:6px 8px!important;gap:6px!important}\n  .hamb{width:36px!important;height:36px!important;min-width:36px!important;min-height:36px!important;border-radius:9px!important;padding:0!important}\n  .top{gap:6px!important;flex:0 0 auto!important}\n  .top-icon-btn{width:36px!important;height:36px!important;min-width:36px!important;min-height:36px!important;border-radius:9px!important;padding:0!important}\n  .ghost-btn{min-height:36px!important;height:36px!important;padding:0 10px!important;border-radius:9px!important;font-size:14px!important;line-height:1!important}\n  .hamb svg,.top-icon-btn svg{width:19px!important;height:19px!important}\n  .clock{min-width:0!important;flex:1 1 auto!important;gap:1px!important;line-height:1.1!important}\n  .clock b{font-size:14px!important;line-height:1.1!important}\n  .clock span{display:block!important;max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:9px!important;line-height:1.2!important}\n  .badge{right:-4px!important;top:-5px!important;min-width:16px!important;height:16px!important;font-size:9px!important;padding:0 4px!important}\n  .notice-panel{top:62px!important}\n}\n@media(max-width:390px){\n  header{padding-left:6px!important;padding-right:6px!important;gap:4px!important}\n  .top{gap:4px!important}\n  .hamb,.top-icon-btn{width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important}\n  .ghost-btn{height:34px!important;min-height:34px!important;padding:0 8px!important;font-size:13px!important}\n  .clock b{font-size:13px!important}\n}\n
+
+/* V61 — tempo configurável da verificação em duas etapas */
+.settings-section{display:grid;gap:14px}
+.settings-section h3{margin:0;font-size:17px}
+.settings-section label{display:grid;gap:7px}
+.settings-section label>span{font-size:13px;color:var(--muted);font-weight:600}
+.security-settings-title{display:flex;align-items:flex-start;gap:12px}
+.security-settings-title>svg{color:var(--blue);margin-top:2px;flex:none}
+.security-settings-title div{display:grid;gap:5px}
+.security-settings-title p{margin:0;color:var(--muted);line-height:1.5;font-size:14px}
+.two-factor-interval-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.two-factor-interval-form input,.two-factor-interval-form select{min-height:48px;padding:10px 12px;width:100%}
+.security-current-rule{display:flex;align-items:center;gap:8px;padding:12px;border-radius:10px;background:var(--blue-soft);color:var(--text);line-height:1.45}
+.security-current-rule svg{color:var(--blue);flex:none}
+.settings-help{color:var(--muted);line-height:1.5}
+.settings-save{min-width:220px}
+html.dark .security-settings-title p,
+html.dark .settings-help,
+html.dark .settings-section label>span{color:#fff!important}
+@media(max-width:700px){
+  .two-factor-interval-form{grid-template-columns:1fr}
+  .settings-save{width:100%}
+}
+
+
+/* V62 — período de 2FA configurável individualmente */
+.my-security-panel{display:grid;gap:16px}
+.my-security-head{display:flex;align-items:center;gap:12px;padding-bottom:4px}
+.my-security-head>svg{color:var(--blue);flex:none}
+.my-security-head>div{display:grid;gap:3px}
+.my-security-head b{font-size:17px}
+.my-security-head span{font-size:13px;color:var(--muted)}
+.my-security-actions{display:flex;gap:10px;flex-wrap:wrap}
+.security-default-info{display:grid;gap:5px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-soft)}
+.security-default-info span{font-size:14px}
+.security-default-info small{color:var(--muted);line-height:1.45}
+html.dark .my-security-head span,
+html.dark .security-default-info small{color:#fff!important}
+@media(max-width:700px){
+  .my-security-actions{display:grid;grid-template-columns:1fr}
+  .my-security-actions button{width:100%!important}
+}

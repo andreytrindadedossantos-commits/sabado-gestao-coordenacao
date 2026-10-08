@@ -869,11 +869,15 @@ function UsersPage({data,admin,reload,toast}:{data:Data;admin:boolean;reload:()=
 }
 
 function AuditPage(){
-  const[logs,setLogs]=useState<AuditLog[]>([]),[loading,setLoading]=useState(true),[search,setSearch]=useState(''),[action,setAction]=useState('Todos'),[entity,setEntity]=useState('Todos'),[open,setOpen]=useState<string|null>(null);
+  const[logs,setLogs]=useState<AuditLog[]>([]),[loading,setLoading]=useState(true),[loadError,setLoadError]=useState(''),[search,setSearch]=useState(''),[action,setAction]=useState('Todos'),[entity,setEntity]=useState('Todos'),[open,setOpen]=useState<string|null>(null);
   const load=async()=>{
-    setLoading(true);
-    const{data,error}=await supabase.from('sabado_audit_logs').select('*').order('created_at',{ascending:false}).limit(500);
-    if(!error){
+    setLoading(true);setLoadError('');
+    const{data,error}=await supabase.rpc('sabado_get_audit_logs',{p_limit:1000});
+    if(error){
+      setLogs([]);
+      setLoadError('Não foi possível carregar a auditoria. Atualize a página e tente novamente.');
+      console.error('Erro ao carregar auditoria:',error);
+    }else{
       setLogs((data||[]).map((x:any)=>({
         id:x.id,action:x.action,entityType:x.entity_type,entityName:x.entity_name||'',recordId:x.record_id||'',
         actorName:x.actor_name||'Usuário sem login',actorEmail:x.actor_email||'',createdAt:x.created_at,
@@ -887,13 +891,14 @@ function AuditPage(){
   const entities=['Todos',...Array.from(new Set(logs.map(x=>x.entityType))).sort()];
   const filtered=logs.filter(x=>{
     const q=search.trim().toLowerCase();
-    const matchesSearch=!q||[x.actorName,x.actorEmail,x.entityType,x.entityName].some(v=>(v||'').toLowerCase().includes(q));
+    const details=[x.beforeData,x.afterData].filter(Boolean).map(v=>JSON.stringify(v)).join(' ');
+    const matchesSearch=!q||[x.actorName,x.actorEmail,x.entityType,x.entityName,x.recordId,details].some(v=>(v||'').toLowerCase().includes(q));
     return matchesSearch&&(action==='Todos'||x.action===action)&&(entity==='Todos'||x.entityType===entity);
   });
   const pretty=(v:any)=>JSON.stringify(v,null,2);
   return <><div className="section-head"><Title t="Registro de Auditoria" s="Veja quem cadastrou, alterou ou excluiu registros e em qual data e horário."/><button className="primary compact-action" onClick={load}>Atualizar</button></div>
   <div className="panel controls audit-controls"><input placeholder="Buscar por usuário ou registro" value={search} onChange={e=>setSearch(e.target.value)}/><select value={action} onChange={e=>setAction(e.target.value)}><option>Todos</option><option value="insert">Cadastrou</option><option value="update">Alterou</option><option value="delete">Excluiu</option></select><select value={entity} onChange={e=>setEntity(e.target.value)}>{entities.map(x=><option key={x}>{x}</option>)}</select></div>
-  <div className="panel audit-panel">{loading?<div className="empty">Carregando auditoria...</div>:filtered.map(log=><div className="audit-row" key={log.id}><div className={'audit-action '+log.action}>{actionLabel(log.action)}</div><div className="audit-main"><b>{log.entityType}: {log.entityName||'Sem identificação'}</b><span><strong>{log.actorName}</strong>{log.actorEmail&&log.actorEmail!==log.actorName?' · '+log.actorEmail:''}</span><small>{new Date(log.createdAt).toLocaleString('pt-BR')}</small></div><button className="edit-icon" onClick={()=>setOpen(open===log.id?null:log.id)}>{open===log.id?'Ocultar':'Detalhes'}</button>{open===log.id&&<div className="audit-details">{log.beforeData&&<div><b>Antes</b><pre>{pretty(log.beforeData)}</pre></div>}{log.afterData&&<div><b>Depois</b><pre>{pretty(log.afterData)}</pre></div>}</div>}</div>)}{!loading&&!filtered.length&&<Empty text="Nenhum registro de auditoria encontrado."/>}</div></>
+  <div className="panel audit-panel">{loading?<div className="empty">Carregando auditoria...</div>:loadError?<div className="empty">{loadError}</div>:filtered.map(log=><div className="audit-row" key={log.id}><div className={'audit-action '+log.action}>{actionLabel(log.action)}</div><div className="audit-main"><b>{log.entityType}: {log.entityName||'Sem identificação'}</b><span><strong>{log.actorName}</strong>{log.actorEmail&&log.actorEmail!==log.actorName?' · '+log.actorEmail:''}</span><small>{new Date(log.createdAt).toLocaleString('pt-BR')}</small></div><button className="edit-icon" onClick={()=>setOpen(open===log.id?null:log.id)}>{open===log.id?'Ocultar':'Detalhes'}</button>{open===log.id&&<div className="audit-details">{log.beforeData&&<div><b>Antes</b><pre>{pretty(log.beforeData)}</pre></div>}{log.afterData&&<div><b>Depois</b><pre>{pretty(log.afterData)}</pre></div>}</div>}</div>)}{!loading&&!loadError&&!filtered.length&&<Empty text={search.trim()?'Nenhum registro encontrado para essa busca.':'Nenhum registro de auditoria encontrado.'}/>}</div></>
 }
 
 function MySecurityPage({currentUser,toast}:{currentUser:UserRec|null;toast:(s:string)=>void}){

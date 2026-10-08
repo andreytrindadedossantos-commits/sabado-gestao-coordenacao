@@ -1,0 +1,8 @@
+V74 — Auditoria corrigida
+
+- A tela de Auditoria agora carrega os registros por uma função segura do Supabase compatível com o login individual do sistema.
+- Corrigido o caso em que a página aparecia vazia mesmo existindo registros no banco.
+- A busca localiza por nome do usuário, usuário/login, tipo de registro, nome do registro, ID e conteúdo dos detalhes Antes/Depois.
+- A tela mostra mensagem de erro quando houver falha real de carregamento.
+- Aumentado o carregamento para até 1000 registros recentes.
+- A função do banco continua liberando a auditoria somente para Administrador.

@@ -1,0 +1,12 @@
+V81 — Confirmação de escala + Minhas Escalas
+
+- Nova página pessoal “Minhas Escalas”.
+- Cada professor visualiza apenas as próprias escalas futuras do ano selecionado.
+- Exibe data, horário, turma e tema.
+- Botões “Confirmar” e “Não poderei participar”.
+- Recusa gera aviso direcionado ao Super Administrador.
+- Ao criar/alterar uma escala, o professor escalado recebe uma notificação direcionada.
+- Confirmações ficam persistidas no Supabase.
+- Campo horário adicionado às escalas; geração automática usa horário padrão.
+- Layout adaptado para PC, tablet e celular.
+- Mantém todas as funções da V80.

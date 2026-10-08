@@ -1,0 +1,11 @@
+V78 — Ajuste completo de responsividade mobile
+
+- Cabeçalho do celular reorganizado em duas linhas para evitar sobreposição.
+- Ano letivo, tema, notificações e botão Sair passam a caber na largura da tela.
+- Cabeçalho passa a ter altura automática no celular, sem ficar por cima do conteúdo.
+- Painéis, cards, formulários e botões adaptados para larguras pequenas.
+- Botões redimensionados para toque sem cortar texto.
+- Notificações reposicionadas abaixo do novo cabeçalho mobile.
+- Tabelas/elementos largos usam comportamento responsivo e rolagem apenas quando necessário.
+- Melhorias específicas para telas de até 390px e até 340px.
+- Mantém todas as funções da V77/V76: ano letivo, frequência, fechamento anual, lixeira, auditoria e 2FA.

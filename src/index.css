@@ -1908,3 +1908,107 @@ html.dark .annual-students-head span,html.dark .annual-student-row.header{color:
 /* V84 — download de backup explícito para funcionar também em navegadores móveis */
 .backup-download-link{display:inline-flex;align-items:center;justify-content:center;gap:7px;text-decoration:none!important}.backup-download-link:hover{text-decoration:none!important}
 @media(max-width:700px){.backup-download-link{width:100%!important;min-height:44px}}
+
+/* V87 — cartões de Professores/Usuários: botões responsivos no celular */
+@media (max-width:700px){
+  .user-access-card{
+    display:grid!important;
+    grid-template-columns:52px minmax(0,1fr)!important;
+    align-items:start!important;
+    gap:12px!important;
+    padding:14px!important;
+  }
+
+  .user-access-card>.avatar{
+    grid-column:1!important;
+    grid-row:1!important;
+    margin:0!important;
+    align-self:center!important;
+  }
+
+  .user-access-card>div:nth-child(2){
+    grid-column:2!important;
+    grid-row:1!important;
+    min-width:0!important;
+  }
+
+  .user-access-card>.permission-actions{
+    grid-column:1 / -1!important;
+    grid-row:2!important;
+    width:100%!important;
+    max-width:100%!important;
+    margin:0!important;
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important;
+    align-items:stretch!important;
+  }
+
+  .user-access-card>.permission-actions button,
+  .user-access-card>.permission-actions .edit-icon,
+  .user-access-card>.permission-actions .danger-icon{
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    min-height:48px!important;
+    height:auto!important;
+    padding:9px 8px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:6px!important;
+    white-space:normal!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+    overflow-wrap:anywhere!important;
+    word-break:normal!important;
+    line-height:1.18!important;
+    text-align:center!important;
+    font-size:12px!important;
+  }
+
+  .user-access-card>.permission-actions button svg{
+    flex:0 0 auto!important;
+    min-width:16px!important;
+  }
+
+  .user-access-card>.permission-actions .security-reset-button{
+    white-space:normal!important;
+  }
+
+  .user-access-card .access-security-status{
+    display:flex!important;
+    flex-wrap:wrap!important;
+    gap:5px!important;
+  }
+
+  .user-access-card .access-status{
+    max-width:100%!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+    line-height:1.2!important;
+  }
+}
+
+@media (max-width:390px){
+  .user-access-card>.permission-actions{
+    grid-template-columns:1fr 1fr!important;
+  }
+  .user-access-card>.permission-actions button,
+  .user-access-card>.permission-actions .edit-icon,
+  .user-access-card>.permission-actions .danger-icon{
+    font-size:11.5px!important;
+    padding:9px 6px!important;
+  }
+}
+
+@media (max-width:340px){
+  .user-access-card>.permission-actions{
+    grid-template-columns:1fr!important;
+  }
+  .user-access-card>.permission-actions button,
+  .user-access-card>.permission-actions .edit-icon,
+  .user-access-card>.permission-actions .danger-icon{
+    font-size:12px!important;
+  }
+}

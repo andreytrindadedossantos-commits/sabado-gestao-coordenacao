@@ -1,0 +1,10 @@
+V87 — Ajuste dos botões da tela Professores/Usuários no celular
+
+- Mantém todas as funções da V86.
+- Corrige textos que saíam para fora dos botões em telas pequenas.
+- Reorganiza os botões Permissões, Nova senha, Redefinir 2 etapas, Editar e Excluir em grade responsiva.
+- Em celulares comuns: 2 colunas.
+- Em telas muito estreitas: 1 coluna.
+- Permite quebra de linha dentro dos botões sem cortar palavras.
+- Aumenta altura mínima dos botões para facilitar toque.
+- Mantém layout normal no tablet e no PC.

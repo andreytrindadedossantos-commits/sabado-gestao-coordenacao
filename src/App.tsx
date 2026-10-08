@@ -1343,7 +1343,7 @@ function SystemCenterPage(){
   const[info,setInfo]=useState<SystemOverview|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[backingUp,setBackingUp]=useState(false),[emailingBackup,setEmailingBackup]=useState(false),[backupMsg,setBackupMsg]=useState(''),[backupUrl,setBackupUrl]=useState(''),[backupName,setBackupName]=useState('');
   const load=async()=>{
     setLoading(true);setError('');
-    const{data,error}=await supabase.rpc('sabado_system_overview_v84');
+    const{data,error}=await supabase.rpc('sabado_system_overview_v87');
     if(error){setError(error.message||'Não foi possível carregar as informações do sistema.');setInfo(null)}
     else setInfo({...((data||{}) as SystemOverview),app_version:'V86'});
     setLoading(false);

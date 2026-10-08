@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Bell, BookOpen, Cake, CalendarDays, ClipboardCheck, Copy, Eye, EyeOff, Heart, History,
-  KeyRound, LogIn, Menu, Moon, PartyPopper, Pencil, Plus, Save, Settings, ShieldCheck, Smartphone, Sun, Trash2,
+  Activity, Bell, BookOpen, Cake, CalendarDays, ClipboardCheck, Copy, Database, Eye, EyeOff, HardDrive, Heart, History,
+  KeyRound, LogIn, Menu, Moon, PartyPopper, Pencil, Plus, RefreshCw, Save, Server, Settings, ShieldCheck, Smartphone, Sun, Trash2,
   UserCog, Users, X
 } from 'lucide-react';
 import { supabase } from './supabase';
@@ -63,6 +63,7 @@ type AuditLog={
 };
 type AcademicYear={year:number;status:'open'|'closed';closedAt:string;closedBy?:string;snapshot:any};
 type TrashItem={id:string;table:string;type:string;name:string;date?:string;deletedAt:string};
+type SystemOverview={app_version:string;status:string;checked_at:string;database_size_bytes:number;database_size_pretty:string;app_tables_size_bytes:number;app_tables_size_pretty:string;counts:Record<string,number>;trash:Record<string,number>;active_users:number;two_factor_enabled_users:number;closed_academic_years:number;last_audit_at:string|null;database_time:string;database_name:string;postgres_version:string};
 
 type PermissionKey=
   |'view_home'|'view_students'|'manage_students'|'view_mothers'|'manage_mothers'
@@ -296,6 +297,7 @@ function App(){
 
   const permissions=currentUser?.permissions||DEFAULT_TEACHER_PERMISSIONS;
   const can=(key:PermissionKey)=>admin||permissions[key]===true;
+  const ownerOnly=admin&&((currentUser?.loginName||'').toLowerCase()==='andrey'||sessionEmail.toLowerCase()===ADMIN_EMAIL);
 
   const navConfig=[
     ['Painel','home',Users,'view_home'],
@@ -313,7 +315,7 @@ function App(){
   ] as const;
   const nav=navConfig.filter(([, , ,perm])=>can(perm as PermissionKey));
   const personal=[['Minha Segurança','security',ShieldCheck]] as const;
-  const extra=admin?[['Lixeira','trash',Trash2],['Auditoria','audit',History],['Configurações','settings',Settings],['Administração','admin',UserCog]] as const:[];
+  const extra=admin?[['Lixeira','trash',Trash2],['Auditoria','audit',History],...(ownerOnly?[['Central do Sistema','system-center',Activity] as const]:[]),['Configurações','settings',Settings],['Administração','admin',UserCog]] as const:[];
 
   // Mostra somente notificações realmente novas. As que foram lidas ou excluídas permanecem ocultas após recarregar a página.
   const visibleNotifications=data.notifications.filter(n=>!hiddenNotices.includes(n.id)&&!read.includes(n.id));
@@ -399,6 +401,7 @@ function App(){
     page==='academic-year'&&can('view_academic_year')?<AcademicYearPage data={data} selectedYear={selectedYear} setSelectedYear={setSelectedYear} reload={reload} toast={toast} admin={admin}/>:
     page==='trash'&&admin?<TrashPage data={data} reload={reload} toast={toast}/>:
     page==='audit'&&admin?<AuditPage/>:
+    page==='system-center'&&ownerOnly?<SystemCenterPage/>:
     page==='settings'&&admin?<SettingsPage data={data} reload={reload} toast={toast}/>:
     page==='admin'&&admin?<AdminPage data={data} setPage={setPage} selectedYear={selectedYear}/>:
     can('view_home')?<Dashboard data={data} selectedYear={selectedYear}/>:<div className="panel"><Title t="Acesso liberado" s="Use o menu para acessar as áreas permitidas pelo administrador."/></div>;
@@ -1285,7 +1288,44 @@ function SettingsPage({data,reload,toast}:{data:Data;reload:()=>Promise<void>;to
   </>
 }
 
-function AdminPage({data,setPage,selectedYear}:{data:Data;setPage:(p:string)=>void;selectedYear:number}){return <><div className="hero"><p>Área exclusiva</p><h1>Painel do Administrador</h1><span>{ADMIN_EMAIL}</span></div><div className="grid"><Card t="Alunos" v={data.students.length}/><Card t="Professores" v={data.users.length}/><Card t={`Chamadas ${selectedYear}`} v={data.attendance.filter(a=>recordYear(a.date)===selectedYear).length}/><Card t="Notificações" v={data.notifications.length}/></div><div className="panel admin-links"><button className="primary" onClick={()=>setPage('users')}>Professores e Acessos</button><button className="primary" onClick={()=>setPage('history')}>Histórico de Chamadas</button><button className="primary" onClick={()=>setPage('audit')}>Registro de Auditoria</button><button className="primary" onClick={()=>setPage('settings')}>Configurações</button></div></>}
+function SystemCenterPage(){
+  const[info,setInfo]=useState<SystemOverview|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
+  const load=async()=>{
+    setLoading(true);setError('');
+    const{data,error}=await supabase.rpc('sabado_system_overview');
+    if(error){setError(error.message||'Não foi possível carregar as informações do sistema.');setInfo(null)}
+    else setInfo(data as SystemOverview);
+    setLoading(false);
+  };
+  useEffect(()=>{load()},[]);
+  const fmtDate=(v?:string|null)=>v?new Date(v).toLocaleString('pt-BR'):'Sem registros';
+  const trashTotal=info?Object.values(info.trash||{}).reduce((a,b)=>a+Number(b||0),0):0;
+  const counts=info?.counts||{};
+  return <><div className="section-head"><Title t="Central do Sistema" s="Informações técnicas, armazenamento e situação geral do sistema. Área exclusiva do Super Administrador."/><button className="primary compact-action" onClick={load} disabled={loading}><RefreshCw size={16}/>{loading?' Atualizando...':' Atualizar'}</button></div>
+    {error&&<div className="panel system-error"><b>Não foi possível consultar o sistema.</b><span>{error}</span></div>}
+    {loading&&!info?<div className="panel">Carregando informações técnicas...</div>:info&&<>
+      <div className="system-status-panel panel"><div className="system-status-icon"><Activity size={26}/></div><div><b>Sistema operacional</b><span>Banco de dados conectado e respondendo normalmente.</span><small>Última verificação: {fmtDate(info.checked_at)}</small></div><span className="system-status-badge">ONLINE</span></div>
+      <div className="grid system-metrics">
+        <div className="card system-metric-card"><Server size={22}/><span>Versão do sistema</span><strong>{info.app_version}</strong><small>Evangelização Infanto Juvenil</small></div>
+        <div className="card system-metric-card"><Database size={22}/><span>Tamanho do banco</span><strong>{info.database_size_pretty}</strong><small>Banco completo do projeto</small></div>
+        <div className="card system-metric-card"><HardDrive size={22}/><span>Dados do sistema</span><strong>{info.app_tables_size_pretty}</strong><small>Tabelas utilizadas pelo sistema</small></div>
+        <div className="card system-metric-card"><Users size={22}/><span>Usuários ativos</span><strong>{info.active_users}</strong><small>{info.two_factor_enabled_users} com 2FA ativo</small></div>
+      </div>
+      <div className="panel"><div className="annual-students-head"><div><b>Registros armazenados</b><span>Quantidade atual de informações mantidas no banco de dados.</span></div></div><div className="system-count-grid">
+        <div><span>Alunos</span><b>{counts.students||0}</b></div><div><span>Professores/usuários</span><b>{counts.users||0}</b></div><div><span>Mães auxiliares</span><b>{counts.mothers||0}</b></div><div><span>Escalas</span><b>{counts.schedules||0}</b></div><div><span>Chamadas</span><b>{counts.attendance||0}</b></div><div><span>Reuniões</span><b>{counts.meetings||0}</b></div><div><span>Eventos</span><b>{counts.events||0}</b></div><div><span>Notificações</span><b>{counts.notifications||0}</b></div><div><span>Registros de auditoria</span><b>{counts.audit_logs||0}</b></div>
+      </div></div>
+      <div className="system-detail-grid">
+        <div className="panel system-detail-card"><ShieldCheck size={22}/><div><b>Segurança</b><span>Usuários com verificação em duas etapas</span><strong>{info.two_factor_enabled_users} de {counts.users||0}</strong></div></div>
+        <div className="panel system-detail-card"><Trash2 size={22}/><div><b>Lixeira</b><span>Registros aguardando restauração ou limpeza</span><strong>{trashTotal}</strong></div></div>
+        <div className="panel system-detail-card"><CalendarDays size={22}/><div><b>Anos encerrados</b><span>Períodos congelados pelo fechamento anual</span><strong>{info.closed_academic_years}</strong></div></div>
+        <div className="panel system-detail-card"><History size={22}/><div><b>Última atividade auditada</b><span>Último registro gravado na Auditoria</span><strong className="system-small-value">{fmtDate(info.last_audit_at)}</strong></div></div>
+      </div>
+      <div className="panel system-technical"><b>Informações técnicas</b><div><span>Banco de dados</span><strong>{info.database_name}</strong></div><div><span>PostgreSQL</span><strong>{info.postgres_version}</strong></div><div><span>Horário do servidor</span><strong>{fmtDate(info.database_time)}</strong></div><div><span>Conexão</span><strong>Supabase conectado</strong></div></div>
+    </>}
+  </>;
+}
+
+function AdminPage({data,setPage,selectedYear}:{data:Data;setPage:(p:string)=>void;selectedYear:number}){return <><div className="hero"><p>Área exclusiva</p><h1>Painel do Administrador</h1><span>{ADMIN_EMAIL}</span></div><div className="grid"><Card t="Alunos" v={data.students.length}/><Card t="Professores" v={data.users.length}/><Card t={`Chamadas ${selectedYear}`} v={data.attendance.filter(a=>recordYear(a.date)===selectedYear).length}/><Card t="Notificações" v={data.notifications.length}/></div><div className="panel admin-links"><button className="primary" onClick={()=>setPage('users')}>Professores e Acessos</button><button className="primary" onClick={()=>setPage('history')}>Histórico de Chamadas</button><button className="primary" onClick={()=>setPage('audit')}>Registro de Auditoria</button><button className="primary" onClick={()=>setPage('system-center')}>Central do Sistema</button><button className="primary" onClick={()=>setPage('settings')}>Configurações</button></div></>}
 
 const Card=({t,v}:{t:string;v:any})=><div className="card"><span>{t}</span><strong>{v}</strong></div>;
 const Title=({t,s}:{t:string;s:string})=><div className="title"><h1>{t}</h1><p>{s}</p></div>;

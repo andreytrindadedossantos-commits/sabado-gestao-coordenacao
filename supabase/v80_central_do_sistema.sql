@@ -1,0 +1,2 @@
+-- Função aplicada diretamente no Supabase na V80.
+-- A função public.sabado_system_overview() retorna métricas técnicas apenas para o Super Administrador.

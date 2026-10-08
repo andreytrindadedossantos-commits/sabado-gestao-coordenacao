@@ -1,0 +1,15 @@
+V80 — Central do Sistema
+
+- Nova opção exclusiva do Super Administrador: Central do Sistema.
+- Exibe versão atual do sistema.
+- Exibe tamanho total do banco de dados.
+- Exibe espaço usado pelas tabelas do sistema.
+- Mostra quantidade de alunos, professores/usuários, mães, escalas, chamadas, reuniões, eventos, notificações e registros de auditoria.
+- Mostra usuários ativos e quantidade com 2FA habilitado.
+- Mostra quantidade de registros na Lixeira.
+- Mostra anos letivos encerrados.
+- Mostra data/hora da última atividade auditada.
+- Mostra banco de dados, versão do PostgreSQL, horário do servidor e estado da conexão.
+- Botão Atualizar para renovar os dados.
+- Interface responsiva para computador, tablet e celular.
+- A área não faz parte das permissões de professores e não pode ser liberada a outros usuários.

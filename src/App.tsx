@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Activity, Bell, BookOpen, Cake, CalendarDays, ClipboardCheck, Copy, Database, Eye, EyeOff, HardDrive, Heart, History,
+  Activity, Bell, BookOpen, Cake, CalendarDays, ClipboardCheck, Copy, Database, Download, Eye, EyeOff, HardDrive, Heart, History, Mail,
   KeyRound, LogIn, Menu, Moon, PartyPopper, Pencil, Plus, RefreshCw, Save, Server, Settings, ShieldCheck, Smartphone, Sun, Trash2,
   UserCog, Users, X
 } from 'lucide-react';
@@ -1340,35 +1340,48 @@ function SettingsPage({data,reload,toast}:{data:Data;reload:()=>Promise<void>;to
 }
 
 function SystemCenterPage(){
-  const[info,setInfo]=useState<SystemOverview|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[backingUp,setBackingUp]=useState(false),[backupMsg,setBackupMsg]=useState('');
+  const[info,setInfo]=useState<SystemOverview|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[backingUp,setBackingUp]=useState(false),[emailingBackup,setEmailingBackup]=useState(false),[backupMsg,setBackupMsg]=useState(''),[backupUrl,setBackupUrl]=useState(''),[backupName,setBackupName]=useState('');
   const load=async()=>{
     setLoading(true);setError('');
-    const{data,error}=await supabase.rpc('sabado_system_overview_v83');
+    const{data,error}=await supabase.rpc('sabado_system_overview_v84');
     if(error){setError(error.message||'Não foi possível carregar as informações do sistema.');setInfo(null)}
-    else setInfo(data as SystemOverview);
+    else setInfo({...((data||{}) as SystemOverview),app_version:'V85'});
     setLoading(false);
   };
   const generateBackup=async()=>{
     if(backingUp)return;
     setBackingUp(true);setBackupMsg('');
+    if(backupUrl){URL.revokeObjectURL(backupUrl);setBackupUrl('');setBackupName('')}
     const{data,error}=await supabase.rpc('sabado_system_backup_v83');
     if(error){setBackupMsg(error.message||'Não foi possível gerar o backup.');setBackingUp(false);return}
     try{
       const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'});
       const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');
       const stamp=new Date().toLocaleString('sv-SE',{timeZone:'America/Sao_Paulo'}).replace(/[-: ]/g,'').slice(0,12);
-      a.href=url;a.download=`backup-evangelizacao-${stamp}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
-      setBackupMsg('Backup gerado com sucesso. Guarde o arquivo em local seguro.');
+      const name=`backup-evangelizacao-${stamp}.json`;
+      setBackupUrl(url);setBackupName(name);
+      setBackupMsg('Backup preparado. Toque em Baixar backup para salvar o arquivo no seu dispositivo.');
     }catch(e:any){setBackupMsg(e?.message||'Não foi possível preparar o arquivo de backup.')}
     setBackingUp(false);
   };
+  const sendBackupEmail=async()=>{
+    if(emailingBackup)return;
+    setEmailingBackup(true);setBackupMsg('');
+    try{
+      const{data,error}=await supabase.functions.invoke('send-system-backup-email',{body:{}});
+      if(error){setBackupMsg(error.message||'Não foi possível enviar o backup por e-mail.')}
+      else if(!data?.ok){setBackupMsg(data?.error||'Não foi possível enviar o backup por e-mail.')}
+      else setBackupMsg(`Backup enviado com sucesso para ${data.sent_to}.`);
+    }catch(e:any){setBackupMsg(e?.message||'Não foi possível enviar o backup por e-mail.')}
+    setEmailingBackup(false);
+  };
+  useEffect(()=>()=>{if(backupUrl)URL.revokeObjectURL(backupUrl)},[backupUrl]);
   useEffect(()=>{load()},[]);
   const fmtDate=(v?:string|null)=>v?new Date(v).toLocaleString('pt-BR'):'Sem registros';
   const trashTotal=info?Object.values(info.trash||{}).reduce((a,b)=>a+Number(b||0),0):0;
   const counts=info?.counts||{};
-  return <><div className="section-head"><Title t="Central do Sistema" s="Informações técnicas, armazenamento, backup e situação geral do sistema. Área exclusiva do Super Administrador."/><div className="system-center-actions"><button className="ghost-btn compact-action" onClick={generateBackup} disabled={backingUp}><HardDrive size={16}/>{backingUp?' Gerando...':' Gerar backup'}</button><button className="primary compact-action" onClick={load} disabled={loading}><RefreshCw size={16}/>{loading?' Atualizando...':' Atualizar'}</button></div></div>
-    {backupMsg&&<div className={`panel system-backup-message ${backupMsg.includes('sucesso')?'success':'error'}`}><b>{backupMsg}</b><small>O backup contém os principais dados do sistema, mas não inclui senhas, segredos de autenticação em duas etapas nem sessões de acesso.</small></div>}
+  return <><div className="section-head"><Title t="Central do Sistema" s="Informações técnicas, armazenamento, backup e situação geral do sistema. Área exclusiva do Super Administrador."/><div className="system-center-actions"><button className="ghost-btn compact-action" onClick={generateBackup} disabled={backingUp}><HardDrive size={16}/>{backingUp?' Preparando...':' Gerar backup'}</button>{backupUrl&&<a className="primary compact-action backup-download-link" href={backupUrl} download={backupName}><Download size={16}/> Baixar backup</a>}<button className="ghost-btn compact-action" onClick={sendBackupEmail} disabled={emailingBackup}><Mail size={16}/>{emailingBackup?' Enviando...':' Enviar por e-mail'}</button><button className="primary compact-action" onClick={load} disabled={loading}><RefreshCw size={16}/>{loading?' Atualizando...':' Atualizar'}</button></div></div>
+    {backupMsg&&<div className={`panel system-backup-message ${backupMsg.includes('sucesso')?'success':'error'}`}><b>{backupMsg}</b><small>Você pode baixar o arquivo no dispositivo ou enviá-lo diretamente para andreytrindadedossantos@gmail.com. O backup não inclui senhas, segredos de autenticação em duas etapas nem sessões de acesso.</small></div>}
     {error&&<div className="panel system-error"><b>Não foi possível consultar o sistema.</b><span>{error}</span></div>}
     {loading&&!info?<div className="panel">Carregando informações técnicas...</div>:info&&<>
       <div className="system-status-panel panel"><div className="system-status-icon"><Activity size={26}/></div><div><b>Sistema operacional</b><span>Banco de dados conectado e respondendo normalmente.</span><small>Última verificação: {fmtDate(info.checked_at)}</small></div><span className="system-status-badge">ONLINE</span></div>

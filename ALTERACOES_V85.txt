@@ -1,0 +1,9 @@
+V85 — Backup por e-mail
+
+- Adicionado botão "Enviar por e-mail" na Central do Sistema.
+- Destinatário fixo: andreytrindadedossantos@gmail.com
+- O backup é gerado no servidor e enviado como anexo JSON.
+- Senhas, segredos 2FA e sessões não entram no backup.
+- Nova Edge Function Supabase: send-system-backup-email.
+- Requer o Secret RESEND_API_KEY no Supabase para envio real.
+- Opcional: BACKUP_FROM_EMAIL com remetente/domínio verificado no Resend.

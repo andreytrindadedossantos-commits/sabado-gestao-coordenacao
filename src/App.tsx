@@ -113,7 +113,7 @@ const empty:Data={students:[],users:[],mothers:[],schedules:[],attendance:[],eve
 async function loadAll():Promise<Data>{
   const [s,u,m,sc,a,e,me,r,n,ay,se]=await Promise.all([
     supabase.from('sabado_students').select('*').is('deleted_at',null).order('name'),
-    supabase.from('sabado_users').select('*').order('name'),
+    supabase.from('sabado_users').select('*').is('deleted_at',null).order('name'),
     supabase.from('sabado_mothers').select('*').is('deleted_at',null).order('name'),
     supabase.from('sabado_schedules').select('*').is('deleted_at',null).order('date'),
     supabase.from('sabado_attendance').select('*').is('deleted_at',null).order('date',{ascending:false}),
@@ -875,10 +875,10 @@ function UsersPage({data,admin,reload,toast}:{data:Data;admin:boolean;reload:()=
   const del=async(u:UserRec)=>{
     if(!admin)return;
     if(u.email?.toLowerCase()===ADMIN_EMAIL)return toast('O Administrador não pode ser excluído aqui.');
-    if(!confirm('Excluir '+u.name+'?'))return;
-    const{error}=await supabase.from('sabado_users').delete().eq('id',u.id);
+    if(!confirm(`Mover ${u.name} para a Lixeira? O usuário ficará sem acesso e poderá ser restaurado por 30 dias.`))return;
+    const{error}=await supabase.from('sabado_users').update({deleted_at:new Date().toISOString()}).eq('id',u.id);
     if(error)return toast(error.message);
-    await reload();toast('Usuário excluído.');
+    await reload();toast('Usuário movido para a Lixeira.');
   };
 
   return <><Title t={admin?'Usuários e Permissões':'Professores'} s={admin?'Cada usuário possui senha individual e verificação obrigatória em duas etapas.':'Lista de professores ativos.'}/>
@@ -890,8 +890,17 @@ function UsersPage({data,admin,reload,toast}:{data:Data;admin:boolean;reload:()=
 }
 
 
+const annualMedal=(presences:number)=>presences>=20?'🥇':presences>=15?'🥉':presences>=10?'🥈':'—';
+const annualFrequency=(presences:number,absences:number)=>{const total=presences+absences;return total>0?Math.round((presences/total)*100):0};
+
 function annualSnapshotFromData(data:Data,year:number){
   const attendance=data.attendance.filter(a=>recordYear(a.date)===year);
+  const student_presence=data.students.map(st=>{
+    const entries=attendance.flatMap(a=>a.entries.filter(e=>e.studentId===st.id));
+    const presences=entries.filter(e=>e.present).length;
+    const absences=entries.filter(e=>!e.present).length;
+    return{studentId:st.id,name:st.name,presences,absences,frequency:annualFrequency(presences,absences),medal:annualMedal(presences)};
+  }).sort((a,b)=>b.presences-a.presences||a.name.localeCompare(b.name,'pt-BR'));
   return{
     year,
     students_total:data.students.length,
@@ -901,15 +910,23 @@ function annualSnapshotFromData(data:Data,year:number){
     schedules:data.schedules.filter(x=>recordYear(x.date)===year).length,
     meetings:data.meetings.filter(x=>recordYear(x.date)===year).length,
     events:data.events.filter(x=>recordYear(x.date)===year).length,
-    student_presence:data.students.map(st=>({studentId:st.id,name:st.name,presences:attendance.reduce((n,a)=>n+a.entries.filter(e=>e.studentId===st.id&&e.present).length,0)})).sort((a,b)=>b.presences-a.presences||a.name.localeCompare(b.name,'pt-BR'))
+    student_presence
   };
+}
+
+function normalizeAnnualStudents(snapshot:any){
+  const students=Array.isArray(snapshot?.student_presence)?snapshot.student_presence:[];
+  return students.map((x:any)=>{
+    const presences=Number(x.presences||0),absences=Number(x.absences||0);
+    return{...x,presences,absences,frequency:Number.isFinite(Number(x.frequency))?Number(x.frequency):annualFrequency(presences,absences),medal:x.medal||annualMedal(presences)};
+  });
 }
 
 function printAnnualReport(year:number,snapshot:any){
   const w=window.open('','_blank');if(!w)return;
-  const students=Array.isArray(snapshot?.student_presence)?snapshot.student_presence:[];
-  const rows=students.map((x:any,i:number)=>`<tr><td>${i+1}</td><td>${String(x.name||'')}</td><td>${Number(x.presences||0)}</td></tr>`).join('');
-  w.document.write(`<html><head><title>Relatório anual ${year}</title><style>@page{size:A4}body{font-family:Arial;padding:24px;color:#172033}h1{color:#245fd2}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.c{border:1px solid #ccd4e0;border-radius:10px;padding:12px}.c b{display:block;font-size:22px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ccd4e0;padding:7px;text-align:left}th{background:#eef3fb}small{color:#667085}</style></head><body><h1>Evangelização Infanto Juvenil</h1><h2>Relatório anual — ${year}</h2><small>Gestão e Coordenação</small><div class="cards"><div class="c">Aulas registradas<b>${Number(snapshot?.attendance_classes||0)}</b></div><div class="c">Presenças<b>${Number(snapshot?.presences||0)}</b></div><div class="c">Faltas<b>${Number(snapshot?.absences||0)}</b></div><div class="c">Escalas<b>${Number(snapshot?.schedules||0)}</b></div><div class="c">Reuniões<b>${Number(snapshot?.meetings||0)}</b></div><div class="c">Eventos<b>${Number(snapshot?.events||0)}</b></div></div><h3>Presenças por aluno</h3><table><thead><tr><th>#</th><th>Aluno</th><th>Presenças</th></tr></thead><tbody>${rows||'<tr><td colspan="3">Nenhum registro de presença.</td></tr>'}</tbody></table><script>window.onload=()=>window.print()</script></body></html>`);w.document.close();
+  const students=normalizeAnnualStudents(snapshot);
+  const rows=students.map((x:any,i:number)=>`<tr><td>${i+1}</td><td>${String(x.name||'')}</td><td>${x.presences}</td><td>${x.absences}</td><td>${x.frequency}%</td><td>${x.medal||'—'}</td></tr>`).join('');
+  w.document.write(`<html><head><title>Relatório anual ${year}</title><style>@page{size:A4}body{font-family:Arial;padding:24px;color:#172033}h1{color:#245fd2}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.c{border:1px solid #ccd4e0;border-radius:10px;padding:12px}.c b{display:block;font-size:22px}table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13px}th,td{border:1px solid #ccd4e0;padding:7px;text-align:left}th{background:#eef3fb}small{color:#667085}.center{text-align:center}</style></head><body><h1>Evangelização Infanto Juvenil</h1><h2>Relatório anual — ${year}</h2><small>Gestão e Coordenação</small><div class="cards"><div class="c">Aulas registradas<b>${Number(snapshot?.attendance_classes||0)}</b></div><div class="c">Presenças<b>${Number(snapshot?.presences||0)}</b></div><div class="c">Faltas<b>${Number(snapshot?.absences||0)}</b></div><div class="c">Escalas<b>${Number(snapshot?.schedules||0)}</b></div><div class="c">Reuniões<b>${Number(snapshot?.meetings||0)}</b></div><div class="c">Eventos<b>${Number(snapshot?.events||0)}</b></div></div><h3>Frequência por aluno</h3><table><thead><tr><th>#</th><th>Aluno</th><th>Presenças</th><th>Faltas</th><th>Frequência</th><th>Medalha</th></tr></thead><tbody>${rows||'<tr><td colspan="6">Nenhum aluno encontrado.</td></tr>'}</tbody></table><script>window.onload=()=>window.print()</script></body></html>`);w.document.close();
 }
 
 function AcademicYearPage({data,selectedYear,setSelectedYear,reload,toast}:{data:Data;selectedYear:number;setSelectedYear:(y:number)=>void;reload:()=>Promise<void>;toast:(s:string)=>void}){
@@ -923,12 +940,13 @@ function AcademicYearPage({data,selectedYear,setSelectedYear,reload,toast}:{data
     if(error){reportWindow?.close();return toast(error.message)}
     if(!result?.ok){reportWindow?.close();return toast(result?.error||'Não foi possível encerrar o ano.')}
     const snap=result.snapshot||snapshot;
-    if(reportWindow){const students=Array.isArray(snap?.student_presence)?snap.student_presence:[];const rows=students.map((x:any,i:number)=>`<tr><td>${i+1}</td><td>${String(x.name||'')}</td><td>${Number(x.presences||0)}</td></tr>`).join('');reportWindow.document.write(`<html><head><title>Relatório anual ${selectedYear}</title><style>body{font-family:Arial;padding:24px}h1{color:#245fd2}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.c{border:1px solid #ccc;border-radius:10px;padding:12px}.c b{display:block;font-size:22px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ccc;padding:7px}th{background:#eef3fb}</style></head><body><h1>Evangelização Infanto Juvenil</h1><h2>Relatório anual — ${selectedYear}</h2><div class="cards"><div class="c">Aulas<b>${Number(snap?.attendance_classes||0)}</b></div><div class="c">Presenças<b>${Number(snap?.presences||0)}</b></div><div class="c">Faltas<b>${Number(snap?.absences||0)}</b></div><div class="c">Escalas<b>${Number(snap?.schedules||0)}</b></div><div class="c">Reuniões<b>${Number(snap?.meetings||0)}</b></div><div class="c">Eventos<b>${Number(snap?.events||0)}</b></div></div><h3>Presenças por aluno</h3><table><tr><th>#</th><th>Aluno</th><th>Presenças</th></tr>${rows}</table><script>window.onload=()=>window.print()</script></body></html>`);reportWindow.document.close()}
+    if(reportWindow){reportWindow.close();printAnnualReport(selectedYear,snap)}
     await reload();setSelectedYear(selectedYear+1);toast(`Ano ${selectedYear} encerrado. ${selectedYear+1} foi aberto com contagem zerada.`);
   };
   return <><Title t="Ano letivo" s="Selecione o ano de trabalho, gere o relatório anual e encerre o período quando ele terminar."/>
     <div className="academic-year-hero panel"><div><span>Ano selecionado</span><strong>{selectedYear}</strong><small>{closure?`Encerrado em ${new Date(closure.closedAt).toLocaleString('pt-BR')}`:'Ano aberto para lançamentos'}</small></div><div className={closure?'year-status closed':'year-status open'}>{closure?'🔒 Encerrado':'● Aberto'}</div></div>
     <div className="grid academic-summary"><Card t="Aulas" v={Number(snapshot.attendance_classes||0)}/><Card t="Presenças" v={Number(snapshot.presences||0)}/><Card t="Faltas" v={Number(snapshot.absences||0)}/><Card t="Escalas" v={Number(snapshot.schedules||0)}/><Card t="Reuniões" v={Number(snapshot.meetings||0)}/><Card t="Eventos" v={Number(snapshot.events||0)}/></div>
+    <div className="panel annual-students-panel"><div className="annual-students-head"><div><b>Alunos e frequência — {selectedYear}</b><span>{closure?'Dados congelados no fechamento anual.':'Atualizado conforme as chamadas salvas no ano selecionado.'}</span></div><div className="medal-legend compact"><span>🥈 10</span><span>🥉 15</span><span>🥇 20+</span></div></div><div className="annual-students-table"><div className="annual-student-row header"><span>Aluno</span><span>Presenças</span><span>Faltas</span><span>Frequência</span><span>Medalha</span></div>{normalizeAnnualStudents(snapshot).map((st:any)=><div className="annual-student-row" key={st.studentId||st.name}><strong>{st.name}</strong><span className="stat-presence">{st.presences}</span><span className="stat-absence">{st.absences}</span><span>{st.frequency}%</span><span className="annual-medal">{st.medal||'—'}</span></div>)}{normalizeAnnualStudents(snapshot).length===0&&<div className="empty-state">Nenhum aluno encontrado para este ano.</div>}</div></div>
     <div className="panel academic-actions"><div><b>Relatório anual</b><span>{closure?'Este relatório usa os números congelados no fechamento.':'Prévia com os registros atuais do ano.'}</span></div><button className="ghost-btn" onClick={()=>printAnnualReport(selectedYear,snapshot)}>📄 Gerar relatório / PDF</button>{!closure&&<button className="danger-close-year" onClick={closeYear}>🔒 Encerrar ano {selectedYear}</button>}</div>
     <div className="panel year-help"><b>Como funciona o fechamento?</b><span>Ao encerrar {selectedYear}, o sistema salva um resumo definitivo do ano, bloqueia novos lançamentos com datas desse período e mantém todo o histórico para consulta. Em seguida, você pode trabalhar em {selectedYear+1}, cuja contagem de presenças começa em zero.</span></div>
   </>
@@ -941,7 +959,7 @@ function TrashPage({data:_,reload,toast}:{data:Data;reload:()=>Promise<void>;toa
     try{
       await supabase.rpc('sabado_purge_trash');
       const defs=[
-        ['sabado_students','Aluno'],['sabado_mothers','Mãe auxiliar'],['sabado_schedules','Escala'],['sabado_meetings','Reunião'],['sabado_attendance','Chamada'],['sabado_events','Evento']
+        ['sabado_students','Aluno'],['sabado_users','Professor / Usuário'],['sabado_mothers','Mãe auxiliar'],['sabado_schedules','Escala'],['sabado_meetings','Reunião'],['sabado_attendance','Chamada'],['sabado_events','Evento']
       ] as const;
       const results=await Promise.all(defs.map(([table])=>supabase.from(table).select('*').not('deleted_at','is',null).order('deleted_at',{ascending:false})));
       const all:TrashItem[]=[];

@@ -1,0 +1,14 @@
+TESTE V76
+
+Validado no Supabase em transação temporária com ROLLBACK:
+- Professor/usuário aparece normalmente antes de ser enviado à Lixeira.
+- Ao definir deleted_at, deixa de ser localizado pelo login.
+- Ao restaurar, volta a ser localizado e pode acessar novamente.
+- A remoção automática após mais de 30 dias foi validada.
+- O teste confirmou removed_after_30_days = true.
+
+A V76 mantém as funções da V75:
+- Lixeira para alunos, mães, escalas, reuniões, chamadas e eventos.
+- Ano letivo dinâmico.
+- Fechamento anual com snapshot e bloqueio do ano encerrado.
+- Interface responsiva para celular e PC.

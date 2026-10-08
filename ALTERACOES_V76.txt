@@ -1,0 +1,8 @@
+V76
+- Professores e usuários agora também são movidos para a Lixeira em vez de serem excluídos imediatamente.
+- Ao ir para a Lixeira, o usuário perde o acesso ao sistema imediatamente.
+- Usuários podem ser restaurados durante 30 dias.
+- Após 30 dias, a limpeza da Lixeira remove definitivamente o usuário e os dados técnicos vinculados por cascata.
+- Lista principal de usuários exibe somente registros ativos fora da Lixeira.
+- Tela da Lixeira passa a mostrar Professor / Usuário junto com os demais tipos.
+- Ajustes responsivos adicionais para botões de usuários e Lixeira no celular.

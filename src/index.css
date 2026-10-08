@@ -1667,3 +1667,34 @@ html.dark .academic-year-picker span,html.dark .academic-year-hero small,html.da
   .academic-summary{grid-template-columns:1fr}
   .academic-year-picker span{font-size:11px}
 }
+
+/* V76 — professores e usuários também usam a Lixeira */
+.trash-card .trash-type{max-width:100%;overflow-wrap:anywhere}
+@media(max-width:700px){
+  .user-access-card .permission-actions{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .user-access-card .permission-actions button{width:100%;justify-content:center;min-width:0}
+  .trash-card{padding:14px!important}
+  .trash-actions{display:grid!important;grid-template-columns:1fr!important;width:100%}
+  .trash-actions button{width:100%!important;justify-content:center}
+}
+
+/* V77 — alunos, presenças, faltas, frequência e medalhas no Ano letivo */
+.annual-students-panel{display:grid;gap:14px}
+.annual-students-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.annual-students-head>div:first-child{display:grid;gap:4px}.annual-students-head span{color:var(--muted);font-size:13px;line-height:1.45}
+.medal-legend.compact{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.medal-legend.compact span{padding:5px 8px;border:1px solid var(--border);border-radius:999px;background:var(--surface-soft);font-size:12px;color:var(--text)}
+.annual-students-table{display:grid;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.annual-student-row{display:grid;grid-template-columns:minmax(180px,1.8fr) repeat(4,minmax(88px,.7fr));align-items:center;gap:10px;padding:11px 13px;border-top:1px solid var(--border)}
+.annual-student-row:first-child{border-top:0}.annual-student-row.header{font-size:12px;font-weight:800;background:var(--surface-soft);color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+.annual-student-row strong{overflow-wrap:anywhere}.stat-presence{color:#16844a;font-weight:800}.stat-absence{color:#b42318;font-weight:800}.annual-medal{font-size:21px}
+html.dark .annual-students-head span,html.dark .annual-student-row.header{color:#e5e7eb!important}
+@media(max-width:760px){
+  .annual-students-head{flex-direction:column}.medal-legend.compact{justify-content:flex-start}
+  .annual-students-table{border:0;gap:10px;overflow:visible}.annual-student-row.header{display:none}
+  .annual-student-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:13px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+  .annual-student-row strong{grid-column:1/-1;font-size:15px;margin-bottom:2px}
+  .annual-student-row span:not(.annual-medal)::before{display:block;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase}
+  .annual-student-row .stat-presence::before{content:'Presenças'}.annual-student-row .stat-absence::before{content:'Faltas'}
+  .annual-student-row span:nth-of-type(3)::before{content:'Frequência'}
+  .annual-medal::before{content:'Medalha';display:block;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase}
+}

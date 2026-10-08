@@ -1,0 +1,8 @@
+V77
+- Mantidas todas as melhorias e correções da V76.
+- Tela Ano letivo agora mostra todos os alunos.
+- Para cada aluno são exibidos: presenças, faltas, percentual de frequência e medalha.
+- Medalhas mantêm as regras do sistema: 10 presenças 🥈, 15 presenças 🥉, 20 ou mais 🥇.
+- Relatório anual/PDF também inclui faltas, frequência e medalha por aluno.
+- Layout responsivo: tabela no PC e cartões compactos no celular.
+- Fechamento anual congela também estes indicadores por aluno.

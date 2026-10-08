@@ -751,8 +751,14 @@ function MySchedulesPage({data,currentUser,reload,toast,selectedYear}:{data:Data
   if(!currentUser)return <><Title t="Minhas Escalas" s="Consulte e confirme suas próximas escalas."/><Empty text="Usuário não identificado."/></>;
   const names=new Set([norm(currentUser.name),norm(currentUser.loginName)]);
   const today=new Date().toISOString().slice(0,10);
+  const confirmation=(s:Schedule)=>data.scheduleConfirmations.find(c=>c.scheduleId===s.id&&c.userId===currentUser.id);
   const mine=data.schedules
-    .filter(s=>recordYear(s.date)===selectedYear&&s.date>=today&&(names.has(norm(s.adolescentTeacher))||names.has(norm(s.youngerTeacher))))
+    .filter(s=>{
+      if(recordYear(s.date)!==selectedYear||s.date<today)return false;
+      if(!(names.has(norm(s.adolescentTeacher))||names.has(norm(s.youngerTeacher))))return false;
+      const c=confirmation(s);
+      return !c||c.status==='pending';
+    })
     .sort((a,b)=>a.date.localeCompare(b.date));
   const respond=async(scheduleId:string,status:'confirmed'|'declined')=>{
     const {data:result,error}=await supabase.rpc('sabado_respond_schedule',{p_schedule_id:scheduleId,p_status:status});
@@ -767,9 +773,8 @@ function MySchedulesPage({data,currentUser,reload,toast,selectedYear}:{data:Data
     if(names.has(norm(s.youngerTeacher)))out.push({label:'Menores',key:'menores'});
     return out;
   };
-  const confirmation=(s:Schedule)=>data.scheduleConfirmations.find(c=>c.scheduleId===s.id&&c.userId===currentUser.id);
   return <><Title t="Minhas Escalas" s="Veja suas próximas escalas, turma, horário e tema. Confirme sua participação ou informe que não poderá participar."/>
-    <div className="my-schedules-list">{mine.map(s=>{const c=confirmation(s);return <div className="panel my-schedule-card" key={s.id}><div className="my-schedule-date"><b>{fmt(s.date)}</b><span>{s.time||'Horário a definir'}</span></div><div className="my-schedule-info"><span>Turma</span><b>{assignments(s).map(a=>a.label).join(' e ')}</b></div><div className="my-schedule-info"><span>Tema</span><b>{s.topic||'A definir'}</b></div><div className="schedule-confirm-status"><span className={`schedule-status ${c?.status||'pending'}`}>{c?.status==='confirmed'?'✅ Confirmado':c?.status==='declined'?'❌ Não poderá participar':'⏳ Aguardando confirmação'}</span></div><div className="schedule-confirm-actions"><button className="yes-rsvp" onClick={()=>respond(s.id,'confirmed')}>✅ Confirmar</button><button className="no-rsvp" onClick={()=>respond(s.id,'declined')}>❌ Não poderei participar</button></div></div>})}{!mine.length&&<Empty text={`Nenhuma escala futura encontrada para você em ${selectedYear}.`}/>}</div>
+    <div className="my-schedules-list">{mine.map(s=>{const c=confirmation(s);return <div className="panel my-schedule-card" key={s.id}><div className="my-schedule-date"><b>{fmt(s.date)}</b><span>{s.time||'Horário a definir'}</span></div><div className="my-schedule-info"><span>Turma</span><b>{assignments(s).map(a=>a.label).join(' e ')}</b></div><div className="my-schedule-info"><span>Tema</span><b>{s.topic||'A definir'}</b></div><div className="schedule-confirm-status"><span className={`schedule-status ${c?.status||'pending'}`}>{c?.status==='confirmed'?'✅ Confirmado':c?.status==='declined'?'❌ Não poderá participar':'⏳ Aguardando confirmação'}</span></div><div className="schedule-confirm-actions"><button className="yes-rsvp" onClick={()=>respond(s.id,'confirmed')}>✅ Confirmar</button><button className="no-rsvp" onClick={()=>respond(s.id,'declined')}>❌ Não poderei participar</button></div></div>})}{!mine.length&&<Empty text={`Nenhuma escala aguardando sua confirmação em ${selectedYear}.`}/>}</div>
   </>;
 }
 
@@ -1324,7 +1329,7 @@ function SystemCenterPage(){
   const[info,setInfo]=useState<SystemOverview|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
   const load=async()=>{
     setLoading(true);setError('');
-    const{data,error}=await supabase.rpc('sabado_system_overview_v81');
+    const{data,error}=await supabase.rpc('sabado_system_overview_v82');
     if(error){setError(error.message||'Não foi possível carregar as informações do sistema.');setInfo(null)}
     else setInfo(data as SystemOverview);
     setLoading(false);

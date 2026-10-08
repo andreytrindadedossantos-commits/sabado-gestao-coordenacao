@@ -1,0 +1,8 @@
+V82 — Minhas Escalas: ocultar após resposta
+
+- Mantém todas as funções da V81.
+- Em Minhas Escalas, somente escalas com confirmação pendente permanecem visíveis.
+- Ao clicar em Confirmar, a escala some da tela após salvar a resposta.
+- Ao clicar em Não poderei participar, a escala também some da tela e o administrador continua recebendo a notificação.
+- A resposta permanece salva no Supabase.
+- Central do Sistema passa a identificar a versão V82.

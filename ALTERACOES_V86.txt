@@ -1,0 +1,9 @@
+V86 — Correção do Backup por E-mail
+
+- Corrigido erro 'column t.created_at does not exist' no backup.
+- Respostas de reuniões agora são ordenadas por updated_at.
+- Corrigido CORS da Edge Function para aceitar x-client-info do supabase-js.
+- Melhorado tratamento de erros do envio por e-mail para exibir a mensagem real retornada pelo servidor.
+- Central do Sistema identifica a versão V86.
+- O download local do backup continua disponível.
+- O envio por e-mail requer o secret RESEND_API_KEY configurado no Supabase.

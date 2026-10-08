@@ -1345,7 +1345,7 @@ function SystemCenterPage(){
     setLoading(true);setError('');
     const{data,error}=await supabase.rpc('sabado_system_overview_v84');
     if(error){setError(error.message||'Não foi possível carregar as informações do sistema.');setInfo(null)}
-    else setInfo({...((data||{}) as SystemOverview),app_version:'V85'});
+    else setInfo({...((data||{}) as SystemOverview),app_version:'V86'});
     setLoading(false);
   };
   const generateBackup=async()=>{
@@ -1369,7 +1369,17 @@ function SystemCenterPage(){
     setEmailingBackup(true);setBackupMsg('');
     try{
       const{data,error}=await supabase.functions.invoke('send-system-backup-email',{body:{}});
-      if(error){setBackupMsg(error.message||'Não foi possível enviar o backup por e-mail.')}
+      if(error){
+        let detail='';
+        try{
+          const response=(error as any)?.context as Response|undefined;
+          if(response){
+            const payload=await response.clone().json().catch(()=>null);
+            detail=payload?.error||payload?.message||'';
+          }
+        }catch{}
+        setBackupMsg(detail||error.message||'Não foi possível enviar o backup por e-mail.');
+      }
       else if(!data?.ok){setBackupMsg(data?.error||'Não foi possível enviar o backup por e-mail.')}
       else setBackupMsg(`Backup enviado com sucesso para ${data.sent_to}.`);
     }catch(e:any){setBackupMsg(e?.message||'Não foi possível enviar o backup por e-mail.')}

@@ -1,0 +1,29 @@
+V75 — Lixeira + Ano letivo + Fechamento anual
+
+1. Lixeira
+- Alunos, mães, escalas, reuniões, chamadas e eventos deixam de ser apagados imediatamente.
+- Ao excluir, o registro recebe deleted_at e some das telas normais.
+- Nova página Lixeira para administradores.
+- Restaurar enquanto estiver na lixeira.
+- Exclusão automática após 30 dias ao abrir/atualizar a Lixeira.
+- Opção de exclusão definitiva manual.
+
+2. Ano letivo
+- Seletor global no topo para 2026, 2027, 2028 e anos seguintes.
+- Dashboard, gráficos, chamadas, histórico, escalas, reuniões, calendário e datas comemorativas seguem o ano selecionado.
+- A seleção fica gravada no navegador.
+
+3. Fechamento anual
+- Nova página Ano letivo.
+- Mostra resumo anual: aulas, presenças, faltas, escalas, reuniões e eventos.
+- Gera relatório anual para impressão/PDF.
+- Botão Encerrar ano.
+- Ao encerrar, grava snapshot definitivo no Supabase.
+- Registros do ano encerrado ficam congelados para consulta.
+- O sistema avança para o próximo ano, cuja contagem começa em zero.
+
+4. Responsividade
+- Ano letivo, Lixeira e fechamento anual adaptados para PC, tablet e celular.
+
+Banco de dados
+- Migração V75 aplicada no Supabase conectado.

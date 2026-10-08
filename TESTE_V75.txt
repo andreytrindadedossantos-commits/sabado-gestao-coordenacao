@@ -1,0 +1,29 @@
+TESTE TÉCNICO V75
+
+Banco de dados (Supabase conectado)
+- 6 tabelas com deleted_at: OK
+  sabado_students, sabado_mothers, sabado_schedules, sabado_meetings, sabado_attendance, sabado_events
+- Soft delete em transação: OK
+- Restauração em transação: OK
+- Limpeza automática após 30 dias: função sabado_purge_trash criada
+- Tabela sabado_academic_years: criada com RLS
+- 4 gatilhos de bloqueio para ano encerrado: OK
+- Teste de tentativa de lançamento em ano encerrado: bloqueado corretamente
+- Função sabado_close_academic_year: criada
+- Função sabado_year_is_closed: criada
+- Auditoria atualizada para registrar envio à lixeira como exclusão
+
+Frontend
+- Seletor global de Ano letivo no cabeçalho
+- Painel/gráficos filtrados por ano
+- Chamada e contagem anual seguem o ano selecionado
+- Histórico filtrado por ano
+- Escalas, reuniões, calendário e datas comemorativas filtrados por ano
+- Página Ano letivo com resumo, relatório/PDF e fechamento
+- Página Lixeira com restauração e exclusão definitiva
+- Layout responsivo para desktop/tablet/celular
+
+Validação de sintaxe
+- O arquivo App.tsx foi analisado pelo compilador TypeScript em modo sem resolução de módulos.
+- Não foram encontrados erros de sintaxe da V75.
+- O build completo não foi executado porque as dependências npm não estão instaladas neste ambiente.

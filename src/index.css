@@ -1621,3 +1621,49 @@ html.dark .att .no.selected{
   .attendance-actions{width:100%}
   .attendance-actions .yes,.attendance-actions .no{flex:1;min-width:0!important}
 }
+
+/* V75 — Lixeira, Ano letivo e Fechamento anual */
+.academic-year-picker{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.academic-year-picker span{font-size:12px;color:var(--muted);white-space:nowrap}
+.academic-year-picker select{min-height:34px;padding:5px 30px 5px 9px;border-radius:8px;min-width:118px}
+.closed-year-badge{display:inline-flex;margin-top:12px;padding:7px 11px;border-radius:999px;background:rgba(255,255,255,.16);font-size:13px}
+.closed-year-note{margin:0 0 14px;padding:12px 14px;border:1px solid #b98522;border-radius:12px;background:rgba(185,133,34,.12);font-weight:700}
+.year-context-box{display:flex;align-items:center;padding:0 14px;min-height:46px;border:1px solid var(--border);border-radius:10px;background:var(--surface-soft)}
+.academic-year-hero{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.academic-year-hero>div:first-child{display:grid;gap:4px}.academic-year-hero strong{font-size:42px}.academic-year-hero small{color:var(--muted)}
+.year-status{padding:10px 14px;border-radius:999px;font-weight:800}.year-status.open{background:rgba(22,132,74,.14);color:#16844a}.year-status.closed{background:rgba(185,133,34,.14);color:#a66e0a}
+.academic-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+.academic-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.academic-actions>div{display:grid;gap:4px;margin-right:auto}.academic-actions span,.year-help span{color:var(--muted);line-height:1.5}
+.danger-close-year{border:1px solid #b42318;background:#b42318;color:#fff;border-radius:10px;padding:11px 14px;font-weight:800;cursor:pointer}
+.year-help{display:grid;gap:8px}
+.trash-info{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.trash-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.trash-card{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+.trash-main{min-width:0;display:grid;gap:5px}.trash-main b{overflow-wrap:anywhere}.trash-main small{color:var(--muted)}
+.trash-type{width:max-content;padding:4px 8px;border-radius:999px;background:var(--blue-soft);color:var(--blue);font-size:11px;font-weight:800}
+.trash-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.restore-btn{border:1px solid #16844a;background:rgba(22,132,74,.10);color:#16844a;border-radius:9px;padding:9px 11px;font-weight:800;cursor:pointer}
+html.dark .year-status.open,html.dark .restore-btn{color:#70dc92}
+html.dark .academic-year-picker span,html.dark .academic-year-hero small,html.dark .academic-actions span,html.dark .year-help span,html.dark .trash-main small{color:#e5e7eb!important}
+
+@media(max-width:900px){
+  .academic-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .trash-grid{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  header{gap:8px!important}
+  .top{gap:6px!important}
+  .academic-year-picker{order:-1;width:100%;justify-content:space-between;padding:5px 8px}
+  .academic-year-picker select{flex:1;max-width:150px}
+  .top{flex-wrap:wrap;justify-content:flex-end}
+  .academic-year-hero{align-items:flex-start;flex-direction:column}
+  .academic-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .academic-actions{align-items:stretch;flex-direction:column}.academic-actions>div{margin-right:0}.academic-actions button{width:100%}
+  .trash-info{align-items:stretch;flex-direction:column}.trash-info button{width:100%}
+  .trash-card{align-items:stretch;flex-direction:column}.trash-actions{display:grid;grid-template-columns:1fr}.trash-actions button{width:100%}
+  .closed-year-note{font-size:13px}
+  .year-context-box{width:100%}
+}
+@media(max-width:390px){
+  .academic-summary{grid-template-columns:1fr}
+  .academic-year-picker span{font-size:11px}
+}

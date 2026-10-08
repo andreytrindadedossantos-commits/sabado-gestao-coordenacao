@@ -1,0 +1,20 @@
+VERSÃO 83 — Backup e Avisos no Painel
+
+1. CENTRAL DO SISTEMA
+- Novo botão "Gerar backup" exclusivo do Super Administrador.
+- O backup é baixado em formato JSON.
+- Inclui os principais dados do sistema: alunos, usuários, mães, escalas, confirmações de escala, chamadas, reuniões, respostas, eventos, notificações, estados das notificações, anos letivos, configurações e até 5.000 registros recentes da Auditoria.
+- Não inclui senhas, segredos do autenticador/2FA nem sessões de acesso.
+
+2. AVISOS NO PAINEL
+- Mostra quantidade de professores com confirmação de escala pendente.
+- Mostra reunião marcada para amanhã.
+- Mostra quantidade de aniversariantes no mês atual.
+- Quando não há pendências, mostra "Nenhum aviso importante no momento".
+
+3. RESPONSIVIDADE
+- Os avisos aparecem em cards no PC/tablet e em uma coluna no celular.
+- Os botões da Central do Sistema ocupam a largura adequada em telas pequenas.
+
+4. VERSÃO
+- Central do Sistema atualizada para V83.

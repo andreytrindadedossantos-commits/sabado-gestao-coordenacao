@@ -605,9 +605,23 @@ function Dashboard({data,selectedYear}:{data:Data;selectedYear:number}){
   const seen=new Set<string>();
   const up=items.filter(i=>recordYear(i.date)===selectedYear&&(selectedYear!==new Date().getFullYear()||i.date>=today)).sort((a,b)=>a.date.localeCompare(b.date)).filter(i=>{const k=i.date+'|'+i.title;if(seen.has(k))return false;seen.add(k);return true});
   const closed=data.academicYears.some(x=>x.year===selectedYear&&x.status==='closed');
+  const nowSP=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Sao_Paulo'}));
+  const tomorrowSP=new Date(nowSP);tomorrowSP.setDate(tomorrowSP.getDate()+1);
+  const tomorrowIso=tomorrowSP.toLocaleDateString('en-CA');
+  const currentMonth=nowSP.getMonth()+1;
+  const pendingFuture=data.scheduleConfirmations.filter(c=>c.status==='pending'&&data.schedules.some(s=>s.id===c.scheduleId&&s.date>=today));
+  const pendingTeachers=new Set(pendingFuture.map(c=>c.userId)).size;
+  const meetingsTomorrow=data.meetings.filter(m=>m.date===tomorrowIso).length;
+  const birthdaysThisMonth=data.students.filter(s=>s.birth&&Number(s.birth.slice(5,7))===currentMonth).length;
+  const dashboardAlerts=[
+    pendingTeachers>0?{key:'pending',icon:'📚',title:`${pendingTeachers} ${pendingTeachers===1?'professor ainda não confirmou':'professores ainda não confirmaram'} a escala`,detail:'Acompanhe as respostas em Escalas / Minhas Escalas.'}:null,
+    meetingsTomorrow>0?{key:'meeting',icon:'📅',title:meetingsTomorrow===1?'Reunião amanhã':`${meetingsTomorrow} reuniões amanhã`,detail:data.meetings.filter(m=>m.date===tomorrowIso).map(m=>m.title).join(' · ')}:null,
+    birthdaysThisMonth>0?{key:'birthdays',icon:'🎂',title:`${birthdaysThisMonth} ${birthdaysThisMonth===1?'aniversariante':'aniversariantes'} neste mês`,detail:months[currentMonth-1]}:null
+  ].filter(Boolean) as {key:string;icon:string;title:string;detail:string}[];
   return <>
     <div className="hero"><p>Visão geral · Ano letivo {selectedYear}</p><h1>Gestão de sábado, simples e organizada.</h1><span>Acompanhe alunos, chamadas, professores, eventos e aniversários em um só lugar.</span>{closed&&<strong className="closed-year-badge">🔒 Ano encerrado — dados congelados</strong>}</div>
     <div className="grid"><Card t="Alunos" v={data.students.length}/><Card t="Professores e admins" v={data.users.length}/><Card t={`Aulas registradas em ${selectedYear}`} v={yearAttendance.length}/><Card t={`Presenças em ${selectedYear}`} v={pres}/></div>
+    <div className="panel dashboard-alerts-panel"><div className="dashboard-alerts-head"><Bell size={20}/><div><b>Avisos importantes</b><span>Informações que precisam de atenção no momento.</span></div></div>{dashboardAlerts.length?<div className="dashboard-alerts-list">{dashboardAlerts.map(a=><div className="dashboard-alert-item" key={a.key}><span className="dashboard-alert-icon">{a.icon}</span><div><b>{a.title}</b><small>{a.detail}</small></div></div>)}</div>:<div className="dashboard-alerts-empty">Nenhum aviso importante no momento.</div>}</div>
     <h2>Gráficos de {selectedYear}</h2>
     <div className="dashboard-charts">
       <div className="chart-card"><div className="chart-title"><b>Presenças por mês</b><small>{selectedYear}</small></div><div className="bar-chart">{monthly.map(m=><div className="bar-col" key={m.label}><div className="bar-value">{m.present}</div><div className="bar-track"><div className="bar-fill" style={{height:Math.max(4,m.present/maxMonthly*100)+'%'}}/></div><small>{m.label}</small></div>)}</div></div>
@@ -1326,19 +1340,35 @@ function SettingsPage({data,reload,toast}:{data:Data;reload:()=>Promise<void>;to
 }
 
 function SystemCenterPage(){
-  const[info,setInfo]=useState<SystemOverview|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
+  const[info,setInfo]=useState<SystemOverview|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[backingUp,setBackingUp]=useState(false),[backupMsg,setBackupMsg]=useState('');
   const load=async()=>{
     setLoading(true);setError('');
-    const{data,error}=await supabase.rpc('sabado_system_overview_v82');
+    const{data,error}=await supabase.rpc('sabado_system_overview_v83');
     if(error){setError(error.message||'Não foi possível carregar as informações do sistema.');setInfo(null)}
     else setInfo(data as SystemOverview);
     setLoading(false);
+  };
+  const generateBackup=async()=>{
+    if(backingUp)return;
+    setBackingUp(true);setBackupMsg('');
+    const{data,error}=await supabase.rpc('sabado_system_backup_v83');
+    if(error){setBackupMsg(error.message||'Não foi possível gerar o backup.');setBackingUp(false);return}
+    try{
+      const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      const stamp=new Date().toLocaleString('sv-SE',{timeZone:'America/Sao_Paulo'}).replace(/[-: ]/g,'').slice(0,12);
+      a.href=url;a.download=`backup-evangelizacao-${stamp}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+      setBackupMsg('Backup gerado com sucesso. Guarde o arquivo em local seguro.');
+    }catch(e:any){setBackupMsg(e?.message||'Não foi possível preparar o arquivo de backup.')}
+    setBackingUp(false);
   };
   useEffect(()=>{load()},[]);
   const fmtDate=(v?:string|null)=>v?new Date(v).toLocaleString('pt-BR'):'Sem registros';
   const trashTotal=info?Object.values(info.trash||{}).reduce((a,b)=>a+Number(b||0),0):0;
   const counts=info?.counts||{};
-  return <><div className="section-head"><Title t="Central do Sistema" s="Informações técnicas, armazenamento e situação geral do sistema. Área exclusiva do Super Administrador."/><button className="primary compact-action" onClick={load} disabled={loading}><RefreshCw size={16}/>{loading?' Atualizando...':' Atualizar'}</button></div>
+  return <><div className="section-head"><Title t="Central do Sistema" s="Informações técnicas, armazenamento, backup e situação geral do sistema. Área exclusiva do Super Administrador."/><div className="system-center-actions"><button className="ghost-btn compact-action" onClick={generateBackup} disabled={backingUp}><HardDrive size={16}/>{backingUp?' Gerando...':' Gerar backup'}</button><button className="primary compact-action" onClick={load} disabled={loading}><RefreshCw size={16}/>{loading?' Atualizando...':' Atualizar'}</button></div></div>
+    {backupMsg&&<div className={`panel system-backup-message ${backupMsg.includes('sucesso')?'success':'error'}`}><b>{backupMsg}</b><small>O backup contém os principais dados do sistema, mas não inclui senhas, segredos de autenticação em duas etapas nem sessões de acesso.</small></div>}
     {error&&<div className="panel system-error"><b>Não foi possível consultar o sistema.</b><span>{error}</span></div>}
     {loading&&!info?<div className="panel">Carregando informações técnicas...</div>:info&&<>
       <div className="system-status-panel panel"><div className="system-status-icon"><Activity size={26}/></div><div><b>Sistema operacional</b><span>Banco de dados conectado e respondendo normalmente.</span><small>Última verificação: {fmtDate(info.checked_at)}</small></div><span className="system-status-badge">ONLINE</span></div>

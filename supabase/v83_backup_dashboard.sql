@@ -1,0 +1,3 @@
+-- V83: Backup da Central do Sistema e Avisos no Painel
+-- A função de backup deve ser aplicada pelo Supabase com as mesmas regras da versão publicada.
+-- A versão V83 usa public.sabado_system_backup_v83() e public.sabado_system_overview_v83().

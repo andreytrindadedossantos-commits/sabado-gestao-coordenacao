@@ -68,20 +68,21 @@ type PermissionKey=
   |'view_home'|'view_students'|'manage_students'|'view_mothers'|'manage_mothers'
   |'view_schedules'|'manage_schedules'|'view_meetings'|'manage_meetings'
   |'view_attendance'|'manage_attendance'|'view_history'|'view_users'
-  |'view_birthdays'|'view_calendar'|'manage_calendar'|'view_celebrations'|'manage_celebrations';
+  |'view_birthdays'|'view_calendar'|'manage_calendar'|'view_celebrations'|'manage_celebrations'|'view_academic_year';
 
 const DEFAULT_TEACHER_PERMISSIONS:Record<PermissionKey,boolean>={
   view_home:true,
   view_students:true,manage_students:false,
-  view_mothers:false,manage_mothers:false,
+  view_mothers:true,manage_mothers:false,
   view_schedules:true,manage_schedules:false,
   view_meetings:true,manage_meetings:false,
   view_attendance:true,manage_attendance:true,
   view_history:true,
-  view_users:false,
+  view_users:true,
   view_birthdays:true,
   view_calendar:true,manage_calendar:false,
-  view_celebrations:true,manage_celebrations:false
+  view_celebrations:true,manage_celebrations:false,
+  view_academic_year:true
 };
 
 const PERMISSION_GROUPS:{title:string;view?:PermissionKey;manage?:PermissionKey}[]=[
@@ -93,6 +94,7 @@ const PERMISSION_GROUPS:{title:string;view?:PermissionKey;manage?:PermissionKey}
   {title:'Chamada',view:'view_attendance',manage:'manage_attendance'},
   {title:'Histórico de Aulas',view:'view_history'},
   {title:'Professores',view:'view_users'},
+  {title:'Ano letivo',view:'view_academic_year'},
   {title:'Aniversariantes',view:'view_birthdays'},
   {title:'Calendário',view:'view_calendar',manage:'manage_calendar'},
   {title:'Datas Comemorativas',view:'view_celebrations',manage:'manage_celebrations'}
@@ -306,11 +308,12 @@ function App(){
     ['Professores','users',UserCog,'view_users'],
     ['Aniversariantes do Mês','birthdays',Cake,'view_birthdays'],
     ['Calendário','calendar',CalendarDays,'view_calendar'],
-    ['Datas Comemorativas','celebrations',PartyPopper,'view_celebrations']
+    ['Datas Comemorativas','celebrations',PartyPopper,'view_celebrations'],
+    ['Ano letivo','academic-year',CalendarDays,'view_academic_year']
   ] as const;
   const nav=navConfig.filter(([, , ,perm])=>can(perm as PermissionKey));
   const personal=[['Minha Segurança','security',ShieldCheck]] as const;
-  const extra=admin?[['Ano letivo','academic-year',CalendarDays],['Lixeira','trash',Trash2],['Auditoria','audit',History],['Configurações','settings',Settings],['Administração','admin',UserCog]] as const:[];
+  const extra=admin?[['Lixeira','trash',Trash2],['Auditoria','audit',History],['Configurações','settings',Settings],['Administração','admin',UserCog]] as const:[];
 
   // Mostra somente notificações realmente novas. As que foram lidas ou excluídas permanecem ocultas após recarregar a página.
   const visibleNotifications=data.notifications.filter(n=>!hiddenNotices.includes(n.id)&&!read.includes(n.id));
@@ -393,7 +396,7 @@ function App(){
     page==='celebrations'&&can('view_celebrations')?<Celebrations data={data} admin={can('manage_celebrations')} reload={reload} toast={toast} selectedYear={selectedYear} closed={selectedYearClosed}/>:
     page==='users'&&can('view_users')?<UsersPage data={data} admin={admin} reload={reload} toast={toast}/>:
     page==='security'?<MySecurityPage currentUser={currentUser} toast={toast}/>:
-    page==='academic-year'&&admin?<AcademicYearPage data={data} selectedYear={selectedYear} setSelectedYear={setSelectedYear} reload={reload} toast={toast}/>:
+    page==='academic-year'&&can('view_academic_year')?<AcademicYearPage data={data} selectedYear={selectedYear} setSelectedYear={setSelectedYear} reload={reload} toast={toast} admin={admin}/>:
     page==='trash'&&admin?<TrashPage data={data} reload={reload} toast={toast}/>:
     page==='audit'&&admin?<AuditPage/>:
     page==='settings'&&admin?<SettingsPage data={data} reload={reload} toast={toast}/>:
@@ -929,10 +932,11 @@ function printAnnualReport(year:number,snapshot:any){
   w.document.write(`<html><head><title>Relatório anual ${year}</title><style>@page{size:A4}body{font-family:Arial;padding:24px;color:#172033}h1{color:#245fd2}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.c{border:1px solid #ccd4e0;border-radius:10px;padding:12px}.c b{display:block;font-size:22px}table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13px}th,td{border:1px solid #ccd4e0;padding:7px;text-align:left}th{background:#eef3fb}small{color:#667085}.center{text-align:center}</style></head><body><h1>Evangelização Infanto Juvenil</h1><h2>Relatório anual — ${year}</h2><small>Gestão e Coordenação</small><div class="cards"><div class="c">Aulas registradas<b>${Number(snapshot?.attendance_classes||0)}</b></div><div class="c">Presenças<b>${Number(snapshot?.presences||0)}</b></div><div class="c">Faltas<b>${Number(snapshot?.absences||0)}</b></div><div class="c">Escalas<b>${Number(snapshot?.schedules||0)}</b></div><div class="c">Reuniões<b>${Number(snapshot?.meetings||0)}</b></div><div class="c">Eventos<b>${Number(snapshot?.events||0)}</b></div></div><h3>Frequência por aluno</h3><table><thead><tr><th>#</th><th>Aluno</th><th>Presenças</th><th>Faltas</th><th>Frequência</th><th>Medalha</th></tr></thead><tbody>${rows||'<tr><td colspan="6">Nenhum aluno encontrado.</td></tr>'}</tbody></table><script>window.onload=()=>window.print()</script></body></html>`);w.document.close();
 }
 
-function AcademicYearPage({data,selectedYear,setSelectedYear,reload,toast}:{data:Data;selectedYear:number;setSelectedYear:(y:number)=>void;reload:()=>Promise<void>;toast:(s:string)=>void}){
+function AcademicYearPage({data,selectedYear,setSelectedYear,reload,toast,admin}:{data:Data;selectedYear:number;setSelectedYear:(y:number)=>void;reload:()=>Promise<void>;toast:(s:string)=>void;admin:boolean}){
   const closure=data.academicYears.find(x=>x.year===selectedYear&&x.status==='closed');
   const snapshot=closure?.snapshot||annualSnapshotFromData(data,selectedYear);
   const closeYear=async()=>{
+    if(!admin)return toast('Somente o Administrador pode encerrar o ano letivo.');
     if(closure)return toast(`O ano ${selectedYear} já está encerrado.`);
     if(!confirm(`Encerrar definitivamente o ano letivo ${selectedYear}?\n\nOs totais serão congelados e registros com data em ${selectedYear} ficarão somente para consulta. O histórico será mantido.`))return;
     const reportWindow=window.open('','_blank');
@@ -947,7 +951,7 @@ function AcademicYearPage({data,selectedYear,setSelectedYear,reload,toast}:{data
     <div className="academic-year-hero panel"><div><span>Ano selecionado</span><strong>{selectedYear}</strong><small>{closure?`Encerrado em ${new Date(closure.closedAt).toLocaleString('pt-BR')}`:'Ano aberto para lançamentos'}</small></div><div className={closure?'year-status closed':'year-status open'}>{closure?'🔒 Encerrado':'● Aberto'}</div></div>
     <div className="grid academic-summary"><Card t="Aulas" v={Number(snapshot.attendance_classes||0)}/><Card t="Presenças" v={Number(snapshot.presences||0)}/><Card t="Faltas" v={Number(snapshot.absences||0)}/><Card t="Escalas" v={Number(snapshot.schedules||0)}/><Card t="Reuniões" v={Number(snapshot.meetings||0)}/><Card t="Eventos" v={Number(snapshot.events||0)}/></div>
     <div className="panel annual-students-panel"><div className="annual-students-head"><div><b>Alunos e frequência — {selectedYear}</b><span>{closure?'Dados congelados no fechamento anual.':'Atualizado conforme as chamadas salvas no ano selecionado.'}</span></div><div className="medal-legend compact"><span>🥈 10</span><span>🥉 15</span><span>🥇 20+</span></div></div><div className="annual-students-table"><div className="annual-student-row header"><span>Aluno</span><span>Presenças</span><span>Faltas</span><span>Frequência</span><span>Medalha</span></div>{normalizeAnnualStudents(snapshot).map((st:any)=><div className="annual-student-row" key={st.studentId||st.name}><strong>{st.name}</strong><span className="stat-presence">{st.presences}</span><span className="stat-absence">{st.absences}</span><span>{st.frequency}%</span><span className="annual-medal">{st.medal||'—'}</span></div>)}{normalizeAnnualStudents(snapshot).length===0&&<div className="empty-state">Nenhum aluno encontrado para este ano.</div>}</div></div>
-    <div className="panel academic-actions"><div><b>Relatório anual</b><span>{closure?'Este relatório usa os números congelados no fechamento.':'Prévia com os registros atuais do ano.'}</span></div><button className="ghost-btn" onClick={()=>printAnnualReport(selectedYear,snapshot)}>📄 Gerar relatório / PDF</button>{!closure&&<button className="danger-close-year" onClick={closeYear}>🔒 Encerrar ano {selectedYear}</button>}</div>
+    <div className="panel academic-actions"><div><b>Relatório anual</b><span>{closure?'Este relatório usa os números congelados no fechamento.':'Prévia com os registros atuais do ano.'}</span></div><button className="ghost-btn" onClick={()=>printAnnualReport(selectedYear,snapshot)}>📄 Gerar relatório / PDF</button>{admin&&!closure&&<button className="danger-close-year" onClick={closeYear}>🔒 Encerrar ano {selectedYear}</button>}{!admin&&<small className="permission-note">Consulta liberada. O fechamento anual é exclusivo do Administrador.</small>}</div>
     <div className="panel year-help"><b>Como funciona o fechamento?</b><span>Ao encerrar {selectedYear}, o sistema salva um resumo definitivo do ano, bloqueia novos lançamentos com datas desse período e mantém todo o histórico para consulta. Em seguida, você pode trabalhar em {selectedYear+1}, cuja contagem de presenças começa em zero.</span></div>
   </>
 }

@@ -1,0 +1,12 @@
+V79 — Permissões ampliadas para Professores
+
+- Professores passam a visualizar, por padrão:
+  * Mães
+  * Professores
+  * Ano letivo
+- Administrador pode liberar ou bloquear individualmente essas telas em Professores > Permissões.
+- Ano letivo para professor é consulta: alunos, presenças, faltas, frequência, medalhas e relatório.
+- Encerrar ano letivo continua exclusivo do Administrador.
+- Cadastro/alteração de professores e edição de permissões continuam exclusivos do Administrador.
+- Cadastro/alteração de mães continua dependendo da permissão "Alterar / lançar".
+- Mantém todas as funções e correções da V78, inclusive layout responsivo para celular e PC.

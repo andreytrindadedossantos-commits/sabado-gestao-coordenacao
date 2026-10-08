@@ -1868,3 +1868,7 @@ html.dark .annual-students-head span,html.dark .annual-student-row.header{color:
   .academic-year-picker span{display:none!important}
   .notice-panel{top:106px!important}
 }
+
+/* V79 — observação de permissão no Ano letivo */
+.permission-note{display:block;color:var(--muted,#667085);font-size:.82rem;line-height:1.35;max-width:360px}
+@media(max-width:700px){.permission-note{max-width:none;width:100%;text-align:left}.academic-actions{align-items:stretch}.academic-actions>button{width:100%;min-height:44px}}

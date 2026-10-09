@@ -53,6 +53,7 @@ type Mother={id:string;name:string;phone:string;email:string;notes:string;active
 type Schedule={id:string;date:string;time:string;adolescentTeacher:string;youngerTeacher:string;cleaningHelper:string;topic:string;replacementReason:string};
 type ScheduleConfirmation={id:string;scheduleId:string;userId:string;assignment:'adolescentes'|'menores';status:'pending'|'confirmed'|'declined';respondedAt:string};
 type TeacherUnavailability={id:string;userId:string;date:string;reason:string};
+type SubstitutionOpportunity={requestId:string;scheduleId:string;date:string;time:string;topic:string;assignment:'adolescentes'|'menores';groupLabel:string;originalTeacher:string};
 type Attendance={id:string;date:string;teacher:string;group:string;entries:{studentId:string;name:string;present:boolean}[]};
 type EventItem={id:string;title:string;date:string;type:string;time:string;notes:string};
 type Meeting={id:string;title:string;date:string;time:string;location:string;notes:string};
@@ -105,7 +106,7 @@ const PERMISSION_GROUPS:{title:string;view?:PermissionKey;manage?:PermissionKey}
 
 const normalizePermissions=(p:any):Record<string,boolean>=>({...DEFAULT_TEACHER_PERMISSIONS,...(p&&typeof p==='object'?p:{})});
 
-type Data={students:Student[];users:UserRec[];mothers:Mother[];schedules:Schedule[];scheduleConfirmations:ScheduleConfirmation[];teacherUnavailability:TeacherUnavailability[];attendance:Attendance[];events:EventItem[];meetings:Meeting[];responses:Response[];notifications:Notice[];academicYears:AcademicYear[];settings:{name:string;subtitle:string;twoFactorIntervalValue:number;twoFactorIntervalUnit:'days'|'months'}};
+type Data={students:Student[];users:UserRec[];mothers:Mother[];schedules:Schedule[];scheduleConfirmations:ScheduleConfirmation[];teacherUnavailability:TeacherUnavailability[];substitutionOpportunities:SubstitutionOpportunity[];attendance:Attendance[];events:EventItem[];meetings:Meeting[];responses:Response[];notifications:Notice[];academicYears:AcademicYear[];settings:{name:string;subtitle:string;twoFactorIntervalValue:number;twoFactorIntervalUnit:'days'|'months'}};
 
 const fmt=(d:string)=>d&&d.length>=10?d.slice(0,10).split('-').reverse().join('/'):'';
 const dateOnly=(d:any)=>d?String(d).slice(0,10):'';
@@ -113,16 +114,17 @@ const formatMobileTime=(value:string)=>{const digits=value.replace(/\D/g,'').sli
 const validMobileTime=(value:string)=>!value||/^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 const recordYear=(d:string)=>Number(String(d||'').slice(0,4));
 const softDeleteRecord=async(table:string,id:string,label:string,reload:()=>Promise<void>,toast:(s:string)=>void)=>{if(!confirm(`Mover ${label} para a Lixeira? O registro poderá ser restaurado por 30 dias.`))return;const{error}=await supabase.from(table).update({deleted_at:new Date().toISOString()}).eq('id',id);if(error)return toast(error.message);await reload();toast('Registro movido para a Lixeira.');};
-const empty:Data={students:[],users:[],mothers:[],schedules:[],scheduleConfirmations:[],teacherUnavailability:[],attendance:[],events:[],meetings:[],responses:[],notifications:[],academicYears:[],settings:{name:'Evangelização Infanto Juvenil',subtitle:'Gestão e Coordenação',twoFactorIntervalValue:3,twoFactorIntervalUnit:'months'}};
+const empty:Data={students:[],users:[],mothers:[],schedules:[],scheduleConfirmations:[],teacherUnavailability:[],substitutionOpportunities:[],attendance:[],events:[],meetings:[],responses:[],notifications:[],academicYears:[],settings:{name:'Evangelização Infanto Juvenil',subtitle:'Gestão e Coordenação',twoFactorIntervalValue:3,twoFactorIntervalUnit:'months'}};
 
 async function loadAll():Promise<Data>{
-  const [s,u,m,sc,cf,tu,a,e,me,r,n,ay,se]=await Promise.all([
+  const [s,u,m,sc,cf,tu,so,a,e,me,r,n,ay,se]=await Promise.all([
     supabase.from('sabado_students').select('*').is('deleted_at',null).order('name'),
     supabase.from('sabado_users').select('*').is('deleted_at',null).order('name'),
     supabase.from('sabado_mothers').select('*').is('deleted_at',null).order('name'),
     supabase.from('sabado_schedules').select('*').is('deleted_at',null).order('date'),
     supabase.from('sabado_schedule_confirmations').select('*'),
     supabase.from('sabado_teacher_unavailability').select('*').order('date'),
+    supabase.rpc('sabado_list_my_substitution_opportunities'),
     supabase.from('sabado_attendance').select('*').is('deleted_at',null).order('date',{ascending:false}),
     supabase.from('sabado_events').select('*').is('deleted_at',null).order('date'),
     supabase.from('sabado_meetings').select('*').is('deleted_at',null).order('date'),
@@ -140,6 +142,7 @@ async function loadAll():Promise<Data>{
     schedules:(sc.data||[]).map((x:any)=>({id:x.id,date:dateOnly(x.date),time:x.time?String(x.time).slice(0,5):'',adolescentTeacher:x.adolescent_teacher||'',youngerTeacher:x.younger_teacher||'',cleaningHelper:x.cleaning_helper||'',topic:x.topic||'',replacementReason:x.replacement_reason||''})),
     scheduleConfirmations:(cf.data||[]).map((x:any)=>({id:x.id,scheduleId:x.schedule_id,userId:x.user_id,assignment:x.assignment,status:x.status,respondedAt:x.responded_at||''})),
     teacherUnavailability:(tu.data||[]).map((x:any)=>({id:x.id,userId:x.user_id,date:dateOnly(x.date),reason:x.reason||''})),
+    substitutionOpportunities:(!so.error&&Array.isArray(so.data)?so.data:[]).map((x:any)=>({requestId:x.request_id,scheduleId:x.schedule_id,date:dateOnly(x.date),time:x.time?String(x.time).slice(0,5):'',topic:x.topic||'',assignment:x.assignment,groupLabel:x.group_label||'',originalTeacher:x.original_teacher||''})),
     attendance:(a.data||[]).map((x:any)=>({id:x.id,date:dateOnly(x.date),teacher:x.teacher,group:x.group_name,entries:Array.isArray(x.entries)?x.entries:[]})),
     events:(e.data||[]).map((x:any)=>({id:x.id,title:x.title,date:dateOnly(x.date),type:x.type,time:x.time?String(x.time).slice(0,5):'',notes:x.notes||''})),
     meetings:(me.data||[]).map((x:any)=>({id:x.id,title:x.title,date:dateOnly(x.date),time:x.time?String(x.time).slice(0,5):'',location:x.location||'',notes:x.notes||''})),
@@ -417,7 +420,7 @@ function App(){
   const doSignOut=async()=>{const token=localStorage.getItem(CUSTOM_SESSION_KEY);if(token)await supabase.rpc('sabado_username_logout',{p_token:token});localStorage.removeItem(CUSTOM_SESSION_KEY);localStorage.removeItem(LOGIN_VALIDITY_KEY);await supabase.auth.signOut();setAdmin(false);setCurrentUser(null);setSessionEmail('');setData(empty);setPage('home')};
 
   return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><div className="brand-logo"><BookOpen size={26}/><span className="brand-heart">♥</span></div><div className="brand-copy"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...personal,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}<div className="user-session-card"><ShieldCheck size={16}/><div><b>{currentUser?.name||sessionEmail}</b><small>{admin?'Administrador':'Professor'}</small></div></div></aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><div className="academic-year-picker"><span>Ano letivo</span><select value={selectedYear} onChange={e=>setSelectedYear(Number(e.target.value))}>{academicYears.map(y=><option key={y} value={y}>{y}{data.academicYears.some(x=>x.year===y&&x.status==='closed')?' · encerrado':''}</option>)}</select></div><button className="top-icon-btn theme-toggle" title={dark?'Usar tema claro':'Usar tema cinza escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button><button className="ghost-btn" onClick={doSignOut}>Sair</button></div></header>
-  {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações novas</b><div className="notice-tools"><button className="read-all" onClick={async()=>{const ids=visibleNotifications.map(n=>n.id);const next=[...new Set([...read,...ids])];setRead(next);localStorage.setItem(noticeReadKey,JSON.stringify(next));await Promise.all(ids.map(id=>persistNoticeState(id,'read')));toast(ids.length?'Todas foram marcadas como lidas.':'Nenhuma notificação nova.')}}>✓ Marcar todas como lidas</button><button className="read-all" onClick={enableDeviceNotifications}>🔔 Ativar no dispositivo</button>{visibleNotifications.length>0&&<button className="delete-notifications-btn" onClick={clearNotices}><Trash2 size={15}/> Excluir notificações</button>}<button className="icon-close" onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div></div>{visibleNotifications.map(n=><div className="notice-item" key={n.id}><div className="notice-item-head"><b>{n.title}</b><div className="notice-item-actions"><button className="notice-read" title="Marcar como lida" onClick={()=>markNoticeRead(n.id)}>✓</button><button className="notice-delete" title="Excluir esta notificação" onClick={()=>deleteNotice(n.id)}><Trash2 size={15}/></button></div></div><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}{n.kind==='schedule-assignment'&&n.scheduleId&&<button className="notice-action" onClick={()=>{setPage('my-schedules');setNoticeOpen(false)}}>Abrir Minhas Escalas</button>}{n.kind==='schedule-declined'&&n.scheduleId&&admin&&<button className="notice-action" onClick={()=>{setPage('schedules');setNoticeOpen(false)}}>Abrir Escalas</button>}</div>)}{!visibleNotifications.length&&<Empty text="Nenhuma notificação nova."/>}</div>}
+  {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações novas</b><div className="notice-tools"><button className="read-all" onClick={async()=>{const ids=visibleNotifications.map(n=>n.id);const next=[...new Set([...read,...ids])];setRead(next);localStorage.setItem(noticeReadKey,JSON.stringify(next));await Promise.all(ids.map(id=>persistNoticeState(id,'read')));toast(ids.length?'Todas foram marcadas como lidas.':'Nenhuma notificação nova.')}}>✓ Marcar todas como lidas</button><button className="read-all" onClick={enableDeviceNotifications}>🔔 Ativar no dispositivo</button>{visibleNotifications.length>0&&<button className="delete-notifications-btn" onClick={clearNotices}><Trash2 size={15}/> Excluir notificações</button>}<button className="icon-close" onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div></div>{visibleNotifications.map(n=><div className="notice-item" key={n.id}><div className="notice-item-head"><b>{n.title}</b><div className="notice-item-actions"><button className="notice-read" title="Marcar como lida" onClick={()=>markNoticeRead(n.id)}>✓</button><button className="notice-delete" title="Excluir esta notificação" onClick={()=>deleteNotice(n.id)}><Trash2 size={15}/></button></div></div><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}{(n.kind==='schedule-assignment'||n.kind==='schedule-substitution-open'||n.kind==='schedule-substitution-filled')&&n.scheduleId&&<button className="notice-action" onClick={()=>{setPage('my-schedules');setNoticeOpen(false)}}>{n.kind==='schedule-substitution-open'?'Ver vaga disponível':'Abrir Minhas Escalas'}</button>}{n.kind==='schedule-declined'&&n.scheduleId&&admin&&<button className="notice-action" onClick={()=>{setPage('schedules');setNoticeOpen(false)}}>Abrir Escalas</button>}</div>)}{!visibleNotifications.length&&<Empty text="Nenhuma notificação nova."/>}</div>}
   {meetingNotice&&<Modal title="Confirmar participação" close={()=>setMeetingNotice(null)}>{admin?<><label>Responder como</label><select value={rsvpUserId} onChange={e=>setRsvpUserId(e.target.value)}><option value="">Selecione o nome</option>{data.users.filter(u=>['Professor','Administrador'].includes(u.role)&&u.status!=='Inativo').sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(u=><option value={u.id} key={u.id}>{u.name}</option>)}</select></>:<div className="logged-response"><ShieldCheck size={18}/><span>Respondendo como <b>{currentUser?.name}</b></span></div>}<div className="rsvp-buttons"><button className="yes-rsvp" onClick={()=>respond('yes')}>✅ Vou participar</button><button className="no-rsvp" onClick={()=>respond('no')}>❌ Não poderei participar</button></div></Modal>}
   {msg&&<div className="toast">{msg}</div>}<section className="content">{content}</section><footer>© 2026 Evangelização Infanto Juvenil · Todos os direitos reservados.</footer></main></div>
 }
@@ -805,7 +808,15 @@ function TeacherAvailabilityPage({data,currentUser,reload,toast,selectedYear}:{d
       }else{
         const{error}=await supabase.from('sabado_teacher_unavailability').insert({user_id:currentUser.id,date,reason:''});
         if(error)return toast(error.message);
-        toast(scheduleFor(date)?'Indisponibilidade registrada. Você já possui escala nessa data; avise o administrador.':'Indisponibilidade registrada. A geração automática evitará esta data.');
+        const scheduled=scheduleFor(date);
+        if(scheduled){
+          const{data:declineResult,error:declineError}=await supabase.rpc('sabado_respond_schedule',{p_schedule_id:scheduled.id,p_status:'declined'});
+          if(declineError)return toast(`Indisponibilidade registrada, mas não foi possível abrir a substituição: ${declineError.message}`);
+          if(declineResult?.ok===false)return toast(`Indisponibilidade registrada, mas não foi possível abrir a substituição: ${declineResult.error||'erro desconhecido'}`);
+          toast('Indisponibilidade registrada. Os professores disponíveis foram avisados sobre a vaga de substituição.');
+        }else{
+          toast('Indisponibilidade registrada. A geração automática evitará esta data.');
+        }
       }
       await reload();
     }finally{setSavingDate('')}
@@ -821,6 +832,7 @@ function TeacherAvailabilityPage({data,currentUser,reload,toast,selectedYear}:{d
 
 function MySchedulesPage({data,currentUser,reload,toast,selectedYear}:{data:Data;currentUser:UserRec|null;reload:()=>Promise<void>;toast:(s:string)=>void;selectedYear:number}){
   const norm=(v:string)=>(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+  const [claiming,setClaiming]=useState('');
   if(!currentUser)return <><Title t="Minhas Escalas" s="Consulte e confirme suas próximas escalas."/><Empty text="Usuário não identificado."/></>;
   const names=new Set([norm(currentUser.name),norm(currentUser.loginName)]);
   const today=new Date().toISOString().slice(0,10);
@@ -833,12 +845,25 @@ function MySchedulesPage({data,currentUser,reload,toast,selectedYear}:{data:Data
       return !c||c.status==='pending';
     })
     .sort((a,b)=>a.date.localeCompare(b.date));
+  const opportunities=data.substitutionOpportunities
+    .filter(o=>recordYear(o.date)===selectedYear&&o.date>=today)
+    .sort((a,b)=>a.date.localeCompare(b.date));
   const respond=async(scheduleId:string,status:'confirmed'|'declined')=>{
     const {data:result,error}=await supabase.rpc('sabado_respond_schedule',{p_schedule_id:scheduleId,p_status:status});
     if(error)return toast(error.message);
     if(result?.ok===false)return toast(result.error||'Não foi possível registrar sua resposta.');
     await reload();
-    toast(status==='confirmed'?'Escala confirmada.':'Ausência informada. O administrador foi avisado.');
+    toast(status==='confirmed'?'Escala confirmada.':'Ausência informada. Os professores disponíveis foram avisados e poderão assumir a vaga.');
+  };
+  const claim=async(requestId:string)=>{
+    setClaiming(requestId);
+    try{
+      const{data:result,error}=await supabase.rpc('sabado_claim_schedule_substitution',{p_request_id:requestId});
+      if(error)return toast(error.message);
+      if(result?.ok===false)return toast(result.error||'Não foi possível assumir esta vaga.');
+      await reload();
+      toast('Substituição confirmada. A escala agora está em seu nome.');
+    }finally{setClaiming('')}
   };
   const assignments=(s:Schedule)=>{
     const out:{label:string;key:'adolescentes'|'menores'}[]=[];
@@ -846,7 +871,9 @@ function MySchedulesPage({data,currentUser,reload,toast,selectedYear}:{data:Data
     if(names.has(norm(s.youngerTeacher)))out.push({label:'Menores',key:'menores'});
     return out;
   };
-  return <><Title t="Minhas Escalas" s="Veja suas próximas escalas, turma, horário e tema. Confirme sua participação ou informe que não poderá participar."/>
+  return <><Title t="Minhas Escalas" s="Confirme suas escalas e veja vagas de substituição disponíveis para você."/>
+    {opportunities.length>0&&<section className="substitution-section"><div className="substitution-title"><div><h3>🔄 Vagas disponíveis para substituição</h3><p>Estas vagas aparecem somente quando você está disponível para aquele sábado.</p></div><span className="substitution-count">{opportunities.length}</span></div><div className="substitution-grid">{opportunities.map(o=><div className="panel substitution-card" key={o.requestId}><div className="substitution-date"><b>{fmt(o.date)}</b><span>{o.time||'Horário a definir'}</span></div><div className="substitution-info"><span>Turma</span><b>{o.groupLabel}</b></div><div className="substitution-info"><span>Tema</span><b>{o.topic||'A definir'}</b></div><div className="substitution-info"><span>Professor que não poderá ir</span><b>{o.originalTeacher}</b></div><button className="claim-substitution-btn" disabled={claiming===o.requestId} onClick={()=>claim(o.requestId)}>{claiming===o.requestId?'Assumindo...':'🙋 Quero assumir essa escala'}</button></div>)}</div></section>}
+    <div className="my-schedules-heading"><h3>📚 Minhas confirmações pendentes</h3></div>
     <div className="my-schedules-list">{mine.map(s=>{const c=confirmation(s);return <div className="panel my-schedule-card" key={s.id}><div className="my-schedule-date"><b>{fmt(s.date)}</b><span>{s.time||'Horário a definir'}</span></div><div className="my-schedule-info"><span>Turma</span><b>{assignments(s).map(a=>a.label).join(' e ')}</b></div><div className="my-schedule-info"><span>Tema</span><b>{s.topic||'A definir'}</b></div><div className="schedule-confirm-status"><span className={`schedule-status ${c?.status||'pending'}`}>{c?.status==='confirmed'?'✅ Confirmado':c?.status==='declined'?'❌ Não poderá participar':'⏳ Aguardando confirmação'}</span></div><div className="schedule-confirm-actions"><button className="yes-rsvp" onClick={()=>respond(s.id,'confirmed')}>✅ Confirmar</button><button className="no-rsvp" onClick={()=>respond(s.id,'declined')}>❌ Não poderei participar</button></div></div>})}{!mine.length&&<Empty text={`Nenhuma escala aguardando sua confirmação em ${selectedYear}.`}/>}</div>
   </>;
 }
@@ -1402,9 +1429,9 @@ function SystemCenterPage(){
   const[info,setInfo]=useState<SystemOverview|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[backingUp,setBackingUp]=useState(false),[emailingBackup,setEmailingBackup]=useState(false),[backupMsg,setBackupMsg]=useState(''),[backupUrl,setBackupUrl]=useState(''),[backupName,setBackupName]=useState('');
   const load=async()=>{
     setLoading(true);setError('');
-    const{data,error}=await supabase.rpc('sabado_system_overview_v88');
+    const{data,error}=await supabase.rpc('sabado_system_overview_v89');
     if(error){setError(error.message||'Não foi possível carregar as informações do sistema.');setInfo(null)}
-    else setInfo({...((data||{}) as SystemOverview),app_version:'V88'});
+    else setInfo({...((data||{}) as SystemOverview),app_version:'V89'});
     setLoading(false);
   };
   const generateBackup=async()=>{
@@ -1431,7 +1458,7 @@ function SystemCenterPage(){
       if(error){
         let detail='';
         try{
-          const response=(error as any)?.context as Response|undefined;
+          const response=(error as any)?.context as globalThis.Response|undefined;
           if(response){
             const payload=await response.clone().json().catch(()=>null);
             detail=payload?.error||payload?.message||'';
@@ -1447,7 +1474,7 @@ function SystemCenterPage(){
   useEffect(()=>()=>{if(backupUrl)URL.revokeObjectURL(backupUrl)},[backupUrl]);
   useEffect(()=>{load()},[]);
   const fmtDate=(v?:string|null)=>v?new Date(v).toLocaleString('pt-BR'):'Sem registros';
-  const trashTotal=info?Object.values(info.trash||{}).reduce((a,b)=>a+Number(b||0),0):0;
+  const trashTotal=info?Object.values(info.trash||{} as Record<string,number>).reduce((a:number,b:number)=>a+Number(b||0),0):0;
   const counts=info?.counts||{};
   return <><div className="section-head"><Title t="Central do Sistema" s="Informações técnicas, armazenamento, backup e situação geral do sistema. Área exclusiva do Super Administrador."/><div className="system-center-actions"><button className="ghost-btn compact-action" onClick={generateBackup} disabled={backingUp}><HardDrive size={16}/>{backingUp?' Preparando...':' Gerar backup'}</button>{backupUrl&&<a className="primary compact-action backup-download-link" href={backupUrl} download={backupName}><Download size={16}/> Baixar backup</a>}<button className="ghost-btn compact-action" onClick={sendBackupEmail} disabled={emailingBackup}><Mail size={16}/>{emailingBackup?' Enviando...':' Enviar por e-mail'}</button><button className="primary compact-action" onClick={load} disabled={loading}><RefreshCw size={16}/>{loading?' Atualizando...':' Atualizar'}</button></div></div>
     {backupMsg&&<div className={`panel system-backup-message ${backupMsg.includes('sucesso')?'success':'error'}`}><b>{backupMsg}</b><small>Você pode baixar o arquivo no dispositivo ou enviá-lo diretamente para andreytrindadedossantos@gmail.com. O backup não inclui senhas, segredos de autenticação em duas etapas nem sessões de acesso.</small></div>}

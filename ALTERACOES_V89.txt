@@ -1,0 +1,13 @@
+V89 — Substituição voluntária de professores
+
+- Quando um professor informa que não poderá participar de uma escala, o sistema abre uma vaga de substituição para a turma correspondente.
+- Professores ativos e disponíveis recebem notificação individual.
+- Não são convidados professores que já estejam escalados no mesmo sábado, que tenham marcado indisponibilidade ou que já tenham recusado a escala.
+- Em Minhas Escalas foi criada a seção “Vagas disponíveis para substituição”.
+- O professor pode tocar em “Quero assumir essa escala”.
+- A primeira aceitação válida assume a vaga; tentativas posteriores recebem aviso de que a vaga já foi preenchida.
+- A escala é atualizada automaticamente com o nome do substituto.
+- O substituto fica confirmado automaticamente.
+- O administrador e o professor original recebem aviso de que a substituição foi preenchida.
+- Se o professor marcar indisponibilidade em uma data em que já está escalado, o sistema também registra a recusa e abre a substituição.
+- Layout responsivo para celular, tablet e computador.

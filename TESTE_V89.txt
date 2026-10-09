@@ -1,0 +1,16 @@
+V89 — checklist técnico
+
+Validado no código:
+- Minhas Escalas exibe vagas de substituição disponíveis.
+- Botão “Quero assumir essa escala”.
+- Primeira aceitação vence de forma atômica no RPC.
+- Professor indisponível não pode assumir vaga.
+- Professor já escalado no mesmo sábado não pode assumir vaga.
+- Professor que recusou não recebe a própria vaga.
+- Professor original e Super Administrador recebem aviso quando a vaga é preenchida.
+- Marcar indisponibilidade em sábado já escalado também dispara a recusa/substituição.
+- Layout responsivo para celular/tablet/PC.
+- Corrigidos dois erros TypeScript preexistentes na Central do Sistema (Response e soma da Lixeira).
+
+Observação:
+O arquivo supabase/v89_substituicao_voluntaria.sql precisa estar aplicado no banco para ativar o fluxo de substituições.

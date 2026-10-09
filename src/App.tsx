@@ -72,7 +72,8 @@ type PermissionKey=
   |'view_home'|'view_students'|'manage_students'|'view_mothers'|'manage_mothers'
   |'view_schedules'|'manage_schedules'|'view_meetings'|'manage_meetings'
   |'view_attendance'|'manage_attendance'|'view_history'|'view_users'
-  |'view_birthdays'|'view_calendar'|'manage_calendar'|'view_celebrations'|'manage_celebrations'|'view_academic_year';
+  |'view_birthdays'|'view_calendar'|'manage_calendar'|'view_celebrations'|'manage_celebrations'|'view_academic_year'
+  |'view_trash'|'view_audit'|'view_system_central'|'view_settings'|'view_admin';
 
 const DEFAULT_TEACHER_PERMISSIONS:Record<PermissionKey,boolean>={
   view_home:true,
@@ -86,7 +87,12 @@ const DEFAULT_TEACHER_PERMISSIONS:Record<PermissionKey,boolean>={
   view_birthdays:true,
   view_calendar:true,manage_calendar:false,
   view_celebrations:true,manage_celebrations:false,
-  view_academic_year:true
+  view_academic_year:true,
+  view_trash:true,
+  view_audit:false,
+  view_system_central:false,
+  view_settings:false,
+  view_admin:false
 };
 
 const PERMISSION_GROUPS:{title:string;view?:PermissionKey;manage?:PermissionKey}[]=[
@@ -101,10 +107,14 @@ const PERMISSION_GROUPS:{title:string;view?:PermissionKey;manage?:PermissionKey}
   {title:'Ano letivo',view:'view_academic_year'},
   {title:'Aniversariantes',view:'view_birthdays'},
   {title:'Calendário',view:'view_calendar',manage:'manage_calendar'},
-  {title:'Datas Comemorativas',view:'view_celebrations',manage:'manage_celebrations'}
+  {title:'Datas Comemorativas',view:'view_celebrations',manage:'manage_celebrations'},
+  {title:'Auditoria (somente leitura)',view:'view_audit'},
+  {title:'Central do Sistema (somente leitura)',view:'view_system_central'},
+  {title:'Configurações (somente leitura)',view:'view_settings'},
+  {title:'Administração (somente leitura)',view:'view_admin'}
 ];
 
-const normalizePermissions=(p:any):Record<string,boolean>=>({...DEFAULT_TEACHER_PERMISSIONS,...(p&&typeof p==='object'?p:{})});
+const normalizePermissions=(p:any):Record<string,boolean>=>({...DEFAULT_TEACHER_PERMISSIONS,...(p&&typeof p==='object'?p:{}),view_trash:true});
 
 type Data={students:Student[];users:UserRec[];mothers:Mother[];schedules:Schedule[];scheduleConfirmations:ScheduleConfirmation[];teacherUnavailability:TeacherUnavailability[];substitutionOpportunities:SubstitutionOpportunity[];attendance:Attendance[];events:EventItem[];meetings:Meeting[];responses:Response[];notifications:Notice[];academicYears:AcademicYear[];settings:{name:string;subtitle:string;twoFactorIntervalValue:number;twoFactorIntervalUnit:'days'|'months'}};
 
@@ -330,6 +340,7 @@ function App(){
   const permissions=currentUser?.permissions||DEFAULT_TEACHER_PERMISSIONS;
   const can=(key:PermissionKey)=>admin||permissions[key]===true;
   const ownerOnly=admin&&((currentUser?.loginName||'').toLowerCase()==='andrey'||sessionEmail.toLowerCase()===ADMIN_EMAIL);
+  const canReadExtra=(key:'view_audit'|'view_system_central'|'view_settings'|'view_admin')=>admin?(key==='view_system_central'?(ownerOnly||permissions[key]===true):true):permissions[key]===true;
 
   const navConfig=[
     ['Painel','home',Users,'view_home'],
@@ -347,7 +358,13 @@ function App(){
   ] as const;
   const nav=navConfig.filter(([, , ,perm])=>can(perm as PermissionKey));
   const personal=[['Minhas Escalas','my-schedules',ClipboardCheck],['Minha Disponibilidade','availability',CalendarDays],['Minha Segurança','security',ShieldCheck]] as const;
-  const extra=admin?[['Lixeira','trash',Trash2],['Auditoria','audit',History],...(ownerOnly?[['Central do Sistema','system-center',Activity] as const]:[]),['Configurações','settings',Settings],['Administração','admin',UserCog]] as const:[];
+  const extra=[
+    ...(can('view_trash')?[['Lixeira','trash',Trash2] as const]:[]),
+    ...(canReadExtra('view_audit')?[['Auditoria','audit',History] as const]:[]),
+    ...(canReadExtra('view_system_central')?[['Central do Sistema','system-center',Activity] as const]:[]),
+    ...(canReadExtra('view_settings')?[['Configurações','settings',Settings] as const]:[]),
+    ...(canReadExtra('view_admin')?[['Administração','admin',UserCog] as const]:[])
+  ];
 
   // Mostra somente notificações realmente novas. As que foram lidas ou excluídas permanecem ocultas após recarregar a página.
   const visibleNotifications=data.notifications.filter(n=>(!n.recipientUserId||n.recipientUserId===currentUser?.id)&&!hiddenNotices.includes(n.id)&&!read.includes(n.id));
@@ -446,11 +463,11 @@ function App(){
     page==='availability'?<TeacherAvailabilityPage data={data} currentUser={currentUser} reload={reload} toast={toast} selectedYear={selectedYear}/>:
     page==='security'?<MySecurityPage currentUser={currentUser} toast={toast}/>:
     page==='academic-year'&&can('view_academic_year')?<AcademicYearPage data={data} selectedYear={selectedYear} setSelectedYear={setSelectedYear} reload={reload} toast={toast} admin={admin}/>:
-    page==='trash'&&admin?<TrashPage data={data} reload={reload} toast={toast}/>:
-    page==='audit'&&admin?<AuditPage/>:
-    page==='system-center'&&ownerOnly?<SystemCenterPage/>:
-    page==='settings'&&admin?<SettingsPage data={data} reload={reload} toast={toast}/>:
-    page==='admin'&&admin?<AdminPage data={data} setPage={setPage} selectedYear={selectedYear}/>:
+    page==='trash'&&can('view_trash')?<TrashPage data={data} reload={reload} toast={toast} readonly={!admin}/>:
+    page==='audit'&&canReadExtra('view_audit')?<AuditPage/>:
+    page==='system-center'&&canReadExtra('view_system_central')?<SystemCenterPage readonly={!ownerOnly}/>:
+    page==='settings'&&canReadExtra('view_settings')?<SettingsPage data={data} reload={reload} toast={toast} readonly={!admin}/>:
+    page==='admin'&&canReadExtra('view_admin')?<AdminPage data={data} setPage={setPage} selectedYear={selectedYear} readonly={!admin}/>:
     can('view_home')?<Dashboard data={data} selectedYear={selectedYear}/>:<div className="panel"><Title t="Acesso liberado" s="Use o menu para acessar as áreas permitidas pelo administrador."/></div>;
 
   const doSignOut=async()=>{const token=localStorage.getItem(CUSTOM_SESSION_KEY);if(token)await supabase.rpc('sabado_username_logout',{p_token:token});localStorage.removeItem(CUSTOM_SESSION_KEY);localStorage.removeItem(LOGIN_VALIDITY_KEY);await supabase.auth.signOut();setAdmin(false);setCurrentUser(null);setSessionEmail('');setData(empty);setPage('home')};
@@ -1133,12 +1150,12 @@ function AcademicYearPage({data,selectedYear,setSelectedYear,reload,toast,admin}
   </>
 }
 
-function TrashPage({data:_,reload,toast}:{data:Data;reload:()=>Promise<void>;toast:(s:string)=>void}){
+function TrashPage({data:_,reload,toast,readonly=false}:{data:Data;reload:()=>Promise<void>;toast:(s:string)=>void;readonly?:boolean}){
   const[items,setItems]=useState<TrashItem[]>([]),[loadingTrash,setLoadingTrash]=useState(true);
   const loadTrash=async()=>{
     setLoadingTrash(true);
     try{
-      await supabase.rpc('sabado_purge_trash');
+      if(!readonly)await supabase.rpc('sabado_purge_trash');
       const defs=[
         ['sabado_students','Aluno'],['sabado_users','Professor / Usuário'],['sabado_mothers','Mãe auxiliar'],['sabado_schedules','Escala'],['sabado_meetings','Reunião'],['sabado_attendance','Chamada'],['sabado_events','Evento']
       ] as const;
@@ -1152,14 +1169,14 @@ function TrashPage({data:_,reload,toast}:{data:Data;reload:()=>Promise<void>;toa
   const restore=async(item:TrashItem)=>{const{error}=await supabase.from(item.table).update({deleted_at:null}).eq('id',item.id);if(error)return toast(error.message);await loadTrash();await reload();toast(`${item.type} restaurado.`)};
   const removeForever=async(item:TrashItem)=>{if(!confirm(`Excluir definitivamente "${item.name}"? Esta ação não poderá ser desfeita.`))return;if(item.table==='sabado_meetings'){await supabase.from('sabado_notifications').update({meeting_id:null}).eq('meeting_id',item.id);await supabase.from('sabado_meeting_responses').delete().eq('meeting_id',item.id)}const{error}=await supabase.from(item.table).delete().eq('id',item.id);if(error)return toast(error.message);await loadTrash();toast('Registro excluído definitivamente.')};
   const daysLeft=(iso:string)=>Math.max(0,30-Math.floor((Date.now()-new Date(iso).getTime())/86400000));
-  return <><Title t="Lixeira" s="Registros excluídos ficam aqui por até 30 dias antes da remoção automática."/><div className="panel trash-info"><span>♻️ Você pode restaurar um item enquanto ele estiver na lixeira.</span><button className="ghost-btn" onClick={loadTrash}>Atualizar</button></div><div className="trash-grid">{items.map(item=><div className="trash-card" key={item.table+item.id}><div className="trash-main"><span className="trash-type">{item.type}</span><b>{item.name}</b>{item.date&&<small>Data: {fmt(item.date)}</small>}<small>Excluído em {new Date(item.deletedAt).toLocaleString('pt-BR')} · {daysLeft(item.deletedAt)} dia(s) para remoção automática</small></div><div className="trash-actions"><button className="restore-btn" onClick={()=>restore(item)}>↩ Restaurar</button><button className="danger-icon" onClick={()=>removeForever(item)}><Trash2 size={16}/> Excluir definitivamente</button></div></div>)}{!loadingTrash&&!items.length&&<Empty text="A Lixeira está vazia."/>}{loadingTrash&&<Empty text="Carregando Lixeira..."/>}</div></>
+  return <><Title t="Lixeira" s={readonly?'Consulta dos registros excluídos. Somente administradores podem restaurar ou excluir definitivamente.':'Registros excluídos ficam aqui por até 30 dias antes da remoção automática.'}/><div className="panel trash-info"><span>{readonly?'👁️ Modo somente leitura.':'♻️ Você pode restaurar um item enquanto ele estiver na lixeira.'}</span><button className="ghost-btn" onClick={loadTrash}>Atualizar</button></div><div className="trash-grid">{items.map(item=><div className="trash-card" key={item.table+item.id}><div className="trash-main"><span className="trash-type">{item.type}</span><b>{item.name}</b>{item.date&&<small>Data: {fmt(item.date)}</small>}<small>Excluído em {new Date(item.deletedAt).toLocaleString('pt-BR')} · {daysLeft(item.deletedAt)} dia(s) para remoção automática</small></div>{!readonly&&<div className="trash-actions"><button className="restore-btn" onClick={()=>restore(item)}>↩ Restaurar</button><button className="danger-icon" onClick={()=>removeForever(item)}><Trash2 size={16}/> Excluir definitivamente</button></div>}</div>)}{!loadingTrash&&!items.length&&<Empty text="A Lixeira está vazia."/>}{loadingTrash&&<Empty text="Carregando Lixeira..."/>}</div></>
 }
 
 function AuditPage(){
   const[logs,setLogs]=useState<AuditLog[]>([]),[loading,setLoading]=useState(true),[loadError,setLoadError]=useState(''),[search,setSearch]=useState(''),[action,setAction]=useState('Todos'),[entity,setEntity]=useState('Todos'),[open,setOpen]=useState<string|null>(null);
   const load=async()=>{
     setLoading(true);setLoadError('');
-    const{data,error}=await supabase.rpc('sabado_get_audit_logs',{p_limit:1000});
+    const{data,error}=await supabase.rpc('sabado_get_audit_logs_v91',{p_limit:1000});
     if(error){
       setLogs([]);
       setLoadError('Não foi possível carregar a auditoria. Atualize a página e tente novamente.');
@@ -1404,7 +1421,7 @@ function MySecurityPage({currentUser,toast}:{currentUser:UserRec|null;toast:(s:s
 }
 
 
-function SettingsPage({data,reload,toast}:{data:Data;reload:()=>Promise<void>;toast:(s:string)=>void}){
+function SettingsPage({data,reload,toast,readonly=false}:{data:Data;reload:()=>Promise<void>;toast:(s:string)=>void;readonly?:boolean}){
   const[f,setF]=useState(data.settings);
   const[saving,setSaving]=useState(false);
 
@@ -1439,36 +1456,36 @@ function SettingsPage({data,reload,toast}:{data:Data;reload:()=>Promise<void>;to
 
   const unitLabel=f.twoFactorIntervalUnit==='days'?'dia(s)':'mês(es)';
 
-  return <><Title t="Configurações" s="Personalize o sistema e a segurança dos acessos."/>
+  return <><Title t="Configurações" s={readonly?'Consulta das configurações atuais do sistema. Modo somente leitura.':'Personalize o sistema e a segurança dos acessos.'}/>
     <div className="panel settings-section">
       <h3>Identidade do sistema</h3>
       <div className="form">
-        <label><span>Nome do sistema</span><input value={f.name} onChange={e=>setF({...f,name:e.target.value})}/></label>
-        <label><span>Subtítulo</span><input value={f.subtitle} onChange={e=>setF({...f,subtitle:e.target.value})}/></label>
+        <label><span>Nome do sistema</span><input value={f.name} disabled={readonly} onChange={e=>setF({...f,name:e.target.value})}/></label>
+        <label><span>Subtítulo</span><input value={f.subtitle} disabled={readonly} onChange={e=>setF({...f,subtitle:e.target.value})}/></label>
       </div>
     </div>
 
     <div className="panel settings-section security-settings">
       <div className="security-settings-title"><ShieldCheck size={22}/><div><h3>Período padrão da verificação em duas etapas</h3><p>Este período será usado apenas para usuários que ainda não escolheram uma configuração própria em Minha Segurança.</p></div></div>
       <div className="two-factor-interval-form">
-        <label><span>Solicitar novamente a cada</span><input type="number" min="1" max={f.twoFactorIntervalUnit==='days'?365:24} value={f.twoFactorIntervalValue} onChange={e=>setF({...f,twoFactorIntervalValue:Number(e.target.value)})}/></label>
-        <label><span>Unidade</span><select value={f.twoFactorIntervalUnit} onChange={e=>setF({...f,twoFactorIntervalUnit:e.target.value as 'days'|'months'})}><option value="days">Dias</option><option value="months">Meses</option></select></label>
+        <label><span>Solicitar novamente a cada</span><input type="number" disabled={readonly} min="1" max={f.twoFactorIntervalUnit==='days'?365:24} value={f.twoFactorIntervalValue} onChange={e=>setF({...f,twoFactorIntervalValue:Number(e.target.value)})}/></label>
+        <label><span>Unidade</span><select value={f.twoFactorIntervalUnit} disabled={readonly} onChange={e=>setF({...f,twoFactorIntervalUnit:e.target.value as 'days'|'months'})}><option value="days">Dias</option><option value="months">Meses</option></select></label>
       </div>
       <div className="security-current-rule"><ShieldCheck size={17}/><span>Padrão do sistema: solicitar o código de verificação a cada <strong>{f.twoFactorIntervalValue} {unitLabel}</strong>.</span></div>
       <small className="settings-help">Cada usuário pode substituir este padrão em <strong>Minha Segurança</strong>. Clicar em Sair não apaga a autorização do navegador.</small>
     </div>
 
-    <button className="primary settings-save" disabled={saving} onClick={save}><Save size={18}/>{saving?'Salvando...':'Salvar configurações'}</button>
+    {readonly?<div className="panel permission-note">👁️ Acesso liberado somente para consulta. Alterações permanecem exclusivas do Administrador.</div>:<button className="primary settings-save" disabled={saving} onClick={save}><Save size={18}/>{saving?'Salvando...':'Salvar configurações'}</button>}
   </>
 }
 
-function SystemCenterPage(){
+function SystemCenterPage({readonly=false}:{readonly?:boolean}){
   const[info,setInfo]=useState<SystemOverview|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[backingUp,setBackingUp]=useState(false),[emailingBackup,setEmailingBackup]=useState(false),[backupMsg,setBackupMsg]=useState(''),[backupUrl,setBackupUrl]=useState(''),[backupName,setBackupName]=useState('');
   const load=async()=>{
     setLoading(true);setError('');
-    const{data,error}=await supabase.rpc('sabado_system_overview_v90');
+    const{data,error}=await supabase.rpc('sabado_system_overview_v91');
     if(error){setError(error.message||'Não foi possível carregar as informações do sistema.');setInfo(null)}
-    else setInfo({...((data||{}) as SystemOverview),app_version:'V89'});
+    else setInfo((data||{}) as SystemOverview);
     setLoading(false);
   };
   const generateBackup=async()=>{
@@ -1513,7 +1530,7 @@ function SystemCenterPage(){
   const fmtDate=(v?:string|null)=>v?new Date(v).toLocaleString('pt-BR'):'Sem registros';
   const trashTotal=info?Object.values(info.trash||{} as Record<string,number>).reduce((a:number,b:number)=>a+Number(b||0),0):0;
   const counts=info?.counts||{};
-  return <><div className="section-head"><Title t="Central do Sistema" s="Informações técnicas, armazenamento, backup e situação geral do sistema. Área exclusiva do Super Administrador."/><div className="system-center-actions"><button className="ghost-btn compact-action" onClick={generateBackup} disabled={backingUp}><HardDrive size={16}/>{backingUp?' Preparando...':' Gerar backup'}</button>{backupUrl&&<a className="primary compact-action backup-download-link" href={backupUrl} download={backupName}><Download size={16}/> Baixar backup</a>}<button className="ghost-btn compact-action" onClick={sendBackupEmail} disabled={emailingBackup}><Mail size={16}/>{emailingBackup?' Enviando...':' Enviar por e-mail'}</button><button className="primary compact-action" onClick={load} disabled={loading}><RefreshCw size={16}/>{loading?' Atualizando...':' Atualizar'}</button></div></div>
+  return <><div className="section-head"><Title t="Central do Sistema" s={readonly?'Informações técnicas e situação geral do sistema. Acesso somente para consulta.':'Informações técnicas, armazenamento, backup e situação geral do sistema. Área exclusiva do Super Administrador.'}/><div className="system-center-actions">{!readonly&&<><button className="ghost-btn compact-action" onClick={generateBackup} disabled={backingUp}><HardDrive size={16}/>{backingUp?' Preparando...':' Gerar backup'}</button>{backupUrl&&<a className="primary compact-action backup-download-link" href={backupUrl} download={backupName}><Download size={16}/> Baixar backup</a>}<button className="ghost-btn compact-action" onClick={sendBackupEmail} disabled={emailingBackup}><Mail size={16}/>{emailingBackup?' Enviando...':' Enviar por e-mail'}</button></>}<button className="primary compact-action" onClick={load} disabled={loading}><RefreshCw size={16}/>{loading?' Atualizando...':' Atualizar'}</button></div></div>
     {backupMsg&&<div className={`panel system-backup-message ${backupMsg.includes('sucesso')?'success':'error'}`}><b>{backupMsg}</b><small>Você pode baixar o arquivo no dispositivo ou enviá-lo diretamente para andreytrindadedossantos@gmail.com. O backup não inclui senhas, segredos de autenticação em duas etapas nem sessões de acesso.</small></div>}
     {error&&<div className="panel system-error"><b>Não foi possível consultar o sistema.</b><span>{error}</span></div>}
     {loading&&!info?<div className="panel">Carregando informações técnicas...</div>:info&&<>
@@ -1538,7 +1555,7 @@ function SystemCenterPage(){
   </>;
 }
 
-function AdminPage({data,setPage,selectedYear}:{data:Data;setPage:(p:string)=>void;selectedYear:number}){return <><div className="hero"><p>Área exclusiva</p><h1>Painel do Administrador</h1><span>{ADMIN_EMAIL}</span></div><div className="grid"><Card t="Alunos" v={data.students.length}/><Card t="Professores" v={data.users.length}/><Card t={`Chamadas ${selectedYear}`} v={data.attendance.filter(a=>recordYear(a.date)===selectedYear).length}/><Card t="Notificações" v={data.notifications.length}/></div><div className="panel admin-links"><button className="primary" onClick={()=>setPage('users')}>Professores e Acessos</button><button className="primary" onClick={()=>setPage('history')}>Histórico de Chamadas</button><button className="primary" onClick={()=>setPage('audit')}>Registro de Auditoria</button><button className="primary" onClick={()=>setPage('system-center')}>Central do Sistema</button><button className="primary" onClick={()=>setPage('settings')}>Configurações</button></div></>}
+function AdminPage({data,setPage,selectedYear,readonly=false}:{data:Data;setPage:(p:string)=>void;selectedYear:number;readonly?:boolean}){return <><div className="hero"><p>{readonly?'Consulta administrativa':'Área exclusiva'}</p><h1>Painel do Administrador</h1><span>{readonly?'Modo somente leitura':ADMIN_EMAIL}</span></div><div className="grid"><Card t="Alunos" v={data.students.length}/><Card t="Professores" v={data.users.length}/><Card t={`Chamadas ${selectedYear}`} v={data.attendance.filter(a=>recordYear(a.date)===selectedYear).length}/><Card t="Notificações" v={data.notifications.length}/></div>{readonly?<div className="panel permission-note">👁️ Você possui acesso somente para consulta. Cadastros, senhas, permissões e configurações continuam exclusivos dos administradores.</div>:<div className="panel admin-links"><button className="primary" onClick={()=>setPage('users')}>Professores e Acessos</button><button className="primary" onClick={()=>setPage('history')}>Histórico de Chamadas</button><button className="primary" onClick={()=>setPage('audit')}>Registro de Auditoria</button><button className="primary" onClick={()=>setPage('system-center')}>Central do Sistema</button><button className="primary" onClick={()=>setPage('settings')}>Configurações</button></div>}</>}
 
 const Card=({t,v}:{t:string;v:any})=><div className="card"><span>{t}</span><strong>{v}</strong></div>;
 const Title=({t,s}:{t:string;s:string})=><div className="title"><h1>{t}</h1><p>{s}</p></div>;

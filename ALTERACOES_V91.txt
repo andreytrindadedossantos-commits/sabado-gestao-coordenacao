@@ -1,0 +1,22 @@
+V91 — Permissões avançadas em modo somente leitura
+
+1. Lixeira liberada para todos os professores em modo somente leitura.
+   - Professores podem consultar registros excluídos.
+   - Restaurar e excluir definitivamente continuam exclusivos do Administrador.
+
+2. Novas permissões individuais para professores:
+   - Auditoria — somente leitura
+   - Central do Sistema — somente leitura
+   - Configurações — somente leitura
+   - Administração — somente leitura
+
+3. O Administrador escolhe quais professores recebem cada acesso em:
+   Professores > Permissões.
+
+4. Proteções:
+   - Central do Sistema não mostra Gerar backup/Enviar por e-mail para professores.
+   - Configurações ficam com campos bloqueados e sem botão Salvar.
+   - Administração exibe apenas indicadores, sem ações administrativas.
+   - Auditoria permite consulta, filtros e detalhes, sem alteração.
+
+5. Central do Sistema atualizada para V91.

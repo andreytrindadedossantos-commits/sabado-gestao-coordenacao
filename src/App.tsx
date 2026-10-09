@@ -158,6 +158,8 @@ function App(){
   const [read,setRead]=useState<string[]>([]),
         [hiddenNotices,setHiddenNotices]=useState<string[]>([]);
   const [selectedYear,setSelectedYear]=useState(()=>{const saved=Number(localStorage.getItem('sabado_academic_year')||0);return saved||new Date().getFullYear()});
+  const [showNewFeatures,setShowNewFeatures]=useState(false);
+  const V90_ANNOUNCEMENT_KEY='v90-new-features';
   useEffect(()=>{localStorage.setItem('sabado_academic_year',String(selectedYear))},[selectedYear]);
 
   const reload=async()=>{try{setData(await loadAll())}catch(e:any){setMsg(e.message||'Erro ao carregar dados.')}finally{setLoading(false)}};
@@ -275,6 +277,27 @@ function App(){
   },[sessionEmail]);
   useEffect(()=>{if(!msg)return;const t=setTimeout(()=>setMsg(''),2500);return()=>clearTimeout(t)},[msg]);
   useEffect(()=>{
+    if(!currentUser?.id){setShowNewFeatures(false);return;}
+    let cancelled=false;
+    const localKey=`announcement:${V90_ANNOUNCEMENT_KEY}:${currentUser.id}`;
+    if(localStorage.getItem(localKey)==='ok'){setShowNewFeatures(false);return;}
+    (async()=>{
+      const{data:ack,error}=await supabase.from('sabado_user_announcements')
+        .select('announcement_key')
+        .eq('user_id',currentUser.id)
+        .eq('announcement_key',V90_ANNOUNCEMENT_KEY)
+        .maybeSingle();
+      if(cancelled)return;
+      if(!error&&ack){
+        localStorage.setItem(localKey,'ok');
+        setShowNewFeatures(false);
+      }else{
+        setShowNewFeatures(true);
+      }
+    })();
+    return()=>{cancelled=true};
+  },[currentUser?.id]);
+  useEffect(()=>{
     if(!sessionEmail)return;
     const t=setInterval(async()=>{
       if(!loginExpired())return;
@@ -360,6 +383,19 @@ function App(){
     await persistNoticeState(id,'deleted');
     toast('Notificação excluída. Ela não será exibida novamente.');
   };
+  const acknowledgeNewFeatures=async()=>{
+    if(!currentUser?.id){setShowNewFeatures(false);return;}
+    const localKey=`announcement:${V90_ANNOUNCEMENT_KEY}:${currentUser.id}`;
+    const{error}=await supabase.from('sabado_user_announcements').upsert({
+      user_id:currentUser.id,
+      announcement_key:V90_ANNOUNCEMENT_KEY,
+      acknowledged_at:new Date().toISOString()
+    },{onConflict:'user_id,announcement_key'});
+    if(error)console.warn('Não foi possível registrar a leitura do aviso:',error.message);
+    localStorage.setItem(localKey,'ok');
+    setShowNewFeatures(false);
+  };
+
   const clearNotices=async()=>{
     if(!visibleNotifications.length||!confirm('Excluir todas as notificações exibidas?'))return;
     const ids=visibleNotifications.map(n=>n.id);
@@ -421,6 +457,7 @@ function App(){
 
   return <div className="shell"><aside className={menu?'side open':'side'}><div className="brand"><div className="brand-logo"><BookOpen size={26}/><span className="brand-heart">♥</span></div><div className="brand-copy"><b className="brand-title"><span>Evangelização</span><span>Infanto Juvenil</span></b><span>Gestão e Coordenação</span></div></div><button className="close" onClick={()=>setMenu(false)}><X/></button>{[...nav,...personal,...extra].map(([label,key,I])=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>{setPage(key);setMenu(false)}}><I size={18}/>{label}</button>)}<div className="user-session-card"><ShieldCheck size={16}/><div><b>{currentUser?.name||sessionEmail}</b><small>{admin?'Administrador':'Professor'}</small></div></div></aside><main><header><button className="hamb" onClick={()=>setMenu(true)}><Menu/></button><div className="clock"><b>{now.toLocaleTimeString('pt-BR')}</b><span>{now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}</span></div><div className="top"><div className="academic-year-picker"><span>Ano letivo</span><select value={selectedYear} onChange={e=>setSelectedYear(Number(e.target.value))}>{academicYears.map(y=><option key={y} value={y}>{y}{data.academicYears.some(x=>x.year===y&&x.status==='closed')?' · encerrado':''}</option>)}</select></div><button className="top-icon-btn theme-toggle" title={dark?'Usar tema claro':'Usar tema cinza escuro'} onClick={()=>setDark(!dark)}>{dark?<Sun/>:<Moon/>}</button><button className="notice-button top-icon-btn" title="Notificações" onClick={()=>setNoticeOpen(!noticeOpen)}><Bell/>{unread>0&&<span className="badge">{unread}</span>}</button><button className="ghost-btn" onClick={doSignOut}>Sair</button></div></header>
   {noticeOpen&&<div className="notice-panel"><div className="notice-head"><b>Notificações novas</b><div className="notice-tools"><button className="read-all" onClick={async()=>{const ids=visibleNotifications.map(n=>n.id);const next=[...new Set([...read,...ids])];setRead(next);localStorage.setItem(noticeReadKey,JSON.stringify(next));await Promise.all(ids.map(id=>persistNoticeState(id,'read')));toast(ids.length?'Todas foram marcadas como lidas.':'Nenhuma notificação nova.')}}>✓ Marcar todas como lidas</button><button className="read-all" onClick={enableDeviceNotifications}>🔔 Ativar no dispositivo</button>{visibleNotifications.length>0&&<button className="delete-notifications-btn" onClick={clearNotices}><Trash2 size={15}/> Excluir notificações</button>}<button className="icon-close" onClick={()=>setNoticeOpen(false)}><X size={18}/></button></div></div>{visibleNotifications.map(n=><div className="notice-item" key={n.id}><div className="notice-item-head"><b>{n.title}</b><div className="notice-item-actions"><button className="notice-read" title="Marcar como lida" onClick={()=>markNoticeRead(n.id)}>✓</button><button className="notice-delete" title="Excluir esta notificação" onClick={()=>deleteNotice(n.id)}><Trash2 size={15}/></button></div></div><span>{n.body}</span><small>{new Date(n.date).toLocaleString('pt-BR')}</small>{n.kind==='meeting'&&n.meetingId&&<button className="notice-action" onClick={()=>{const m=data.meetings.find(x=>x.id===n.meetingId);if(m){setMeetingNotice(m);setNoticeOpen(false)}}}>Responder à reunião</button>}{(n.kind==='schedule-assignment'||n.kind==='schedule-substitution-open'||n.kind==='schedule-substitution-filled')&&n.scheduleId&&<button className="notice-action" onClick={()=>{setPage('my-schedules');setNoticeOpen(false)}}>{n.kind==='schedule-substitution-open'?'Ver vaga disponível':'Abrir Minhas Escalas'}</button>}{n.kind==='schedule-declined'&&n.scheduleId&&admin&&<button className="notice-action" onClick={()=>{setPage('schedules');setNoticeOpen(false)}}>Abrir Escalas</button>}</div>)}{!visibleNotifications.length&&<Empty text="Nenhuma notificação nova."/>}</div>}
+  {showNewFeatures&&<div className="modal-backdrop v90-news-backdrop"><div className="modal-card v90-news-card" role="dialog" aria-modal="true" aria-labelledby="v90-news-title"><div className="v90-news-header"><div className="v90-news-icon">✨</div><div><span className="v90-news-kicker">Novidades do sistema</span><h3 id="v90-news-title">Novas funcionalidades</h3></div></div><div className="v90-news-list"><div><b>Ano Letivo</b><span>Acompanhe o ano selecionado, consulte informações anuais e o fechamento do período.</span></div><div><b>Minhas Escalas</b><span>Veja suas próximas escalas, confirme participação e acompanhe vagas disponíveis para substituição.</span></div><div><b>Minha Disponibilidade</b><span>Informe os sábados em que você não poderá participar para facilitar a organização das escalas.</span></div><div><b>Lixeira</b><span>Área administrativa para consultar e restaurar registros excluídos recentemente.</span></div><div><b>Minha Segurança</b><span>Consulte e gerencie recursos de proteção da sua conta e dos dispositivos autorizados.</span></div></div><button className="primary v90-news-ok" onClick={acknowledgeNewFeatures}>OK, entendi</button></div></div>}
   {meetingNotice&&<Modal title="Confirmar participação" close={()=>setMeetingNotice(null)}>{admin?<><label>Responder como</label><select value={rsvpUserId} onChange={e=>setRsvpUserId(e.target.value)}><option value="">Selecione o nome</option>{data.users.filter(u=>['Professor','Administrador'].includes(u.role)&&u.status!=='Inativo').sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(u=><option value={u.id} key={u.id}>{u.name}</option>)}</select></>:<div className="logged-response"><ShieldCheck size={18}/><span>Respondendo como <b>{currentUser?.name}</b></span></div>}<div className="rsvp-buttons"><button className="yes-rsvp" onClick={()=>respond('yes')}>✅ Vou participar</button><button className="no-rsvp" onClick={()=>respond('no')}>❌ Não poderei participar</button></div></Modal>}
   {msg&&<div className="toast">{msg}</div>}<section className="content">{content}</section><footer>© 2026 Evangelização Infanto Juvenil · Todos os direitos reservados.</footer></main></div>
 }
@@ -1429,7 +1466,7 @@ function SystemCenterPage(){
   const[info,setInfo]=useState<SystemOverview|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[backingUp,setBackingUp]=useState(false),[emailingBackup,setEmailingBackup]=useState(false),[backupMsg,setBackupMsg]=useState(''),[backupUrl,setBackupUrl]=useState(''),[backupName,setBackupName]=useState('');
   const load=async()=>{
     setLoading(true);setError('');
-    const{data,error}=await supabase.rpc('sabado_system_overview_v89');
+    const{data,error}=await supabase.rpc('sabado_system_overview_v90');
     if(error){setError(error.message||'Não foi possível carregar as informações do sistema.');setInfo(null)}
     else setInfo({...((data||{}) as SystemOverview),app_version:'V89'});
     setLoading(false);

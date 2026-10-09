@@ -1,0 +1,14 @@
+V90 — Aviso de novas funcionalidades ao entrar no sistema
+
+- Adicionado aviso de novidades exibido após o login.
+- O aviso contém somente estas telas:
+  • Ano Letivo
+  • Minhas Escalas
+  • Minha Disponibilidade
+  • Lixeira
+  • Minha Segurança
+- Cada item possui uma explicação curta e objetiva.
+- Botão “OK, entendi” registra a leitura.
+- Depois que o usuário confirma, o aviso não é exibido novamente para aquele usuário.
+- A confirmação é salva no Supabase e também possui fallback local no navegador.
+- Layout responsivo para celular, tablet e computador.

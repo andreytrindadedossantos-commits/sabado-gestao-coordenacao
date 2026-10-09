@@ -52,6 +52,7 @@ type UserRec={id:string;name:string;loginName:string;passwordCreated:boolean;two
 type Mother={id:string;name:string;phone:string;email:string;notes:string;active:boolean;birth:string;ageInfo:string};
 type Schedule={id:string;date:string;time:string;adolescentTeacher:string;youngerTeacher:string;cleaningHelper:string;topic:string;replacementReason:string};
 type ScheduleConfirmation={id:string;scheduleId:string;userId:string;assignment:'adolescentes'|'menores';status:'pending'|'confirmed'|'declined';respondedAt:string};
+type TeacherUnavailability={id:string;userId:string;date:string;reason:string};
 type Attendance={id:string;date:string;teacher:string;group:string;entries:{studentId:string;name:string;present:boolean}[]};
 type EventItem={id:string;title:string;date:string;type:string;time:string;notes:string};
 type Meeting={id:string;title:string;date:string;time:string;location:string;notes:string};
@@ -104,7 +105,7 @@ const PERMISSION_GROUPS:{title:string;view?:PermissionKey;manage?:PermissionKey}
 
 const normalizePermissions=(p:any):Record<string,boolean>=>({...DEFAULT_TEACHER_PERMISSIONS,...(p&&typeof p==='object'?p:{})});
 
-type Data={students:Student[];users:UserRec[];mothers:Mother[];schedules:Schedule[];scheduleConfirmations:ScheduleConfirmation[];attendance:Attendance[];events:EventItem[];meetings:Meeting[];responses:Response[];notifications:Notice[];academicYears:AcademicYear[];settings:{name:string;subtitle:string;twoFactorIntervalValue:number;twoFactorIntervalUnit:'days'|'months'}};
+type Data={students:Student[];users:UserRec[];mothers:Mother[];schedules:Schedule[];scheduleConfirmations:ScheduleConfirmation[];teacherUnavailability:TeacherUnavailability[];attendance:Attendance[];events:EventItem[];meetings:Meeting[];responses:Response[];notifications:Notice[];academicYears:AcademicYear[];settings:{name:string;subtitle:string;twoFactorIntervalValue:number;twoFactorIntervalUnit:'days'|'months'}};
 
 const fmt=(d:string)=>d&&d.length>=10?d.slice(0,10).split('-').reverse().join('/'):'';
 const dateOnly=(d:any)=>d?String(d).slice(0,10):'';
@@ -112,15 +113,16 @@ const formatMobileTime=(value:string)=>{const digits=value.replace(/\D/g,'').sli
 const validMobileTime=(value:string)=>!value||/^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 const recordYear=(d:string)=>Number(String(d||'').slice(0,4));
 const softDeleteRecord=async(table:string,id:string,label:string,reload:()=>Promise<void>,toast:(s:string)=>void)=>{if(!confirm(`Mover ${label} para a Lixeira? O registro poderá ser restaurado por 30 dias.`))return;const{error}=await supabase.from(table).update({deleted_at:new Date().toISOString()}).eq('id',id);if(error)return toast(error.message);await reload();toast('Registro movido para a Lixeira.');};
-const empty:Data={students:[],users:[],mothers:[],schedules:[],scheduleConfirmations:[],attendance:[],events:[],meetings:[],responses:[],notifications:[],academicYears:[],settings:{name:'Evangelização Infanto Juvenil',subtitle:'Gestão e Coordenação',twoFactorIntervalValue:3,twoFactorIntervalUnit:'months'}};
+const empty:Data={students:[],users:[],mothers:[],schedules:[],scheduleConfirmations:[],teacherUnavailability:[],attendance:[],events:[],meetings:[],responses:[],notifications:[],academicYears:[],settings:{name:'Evangelização Infanto Juvenil',subtitle:'Gestão e Coordenação',twoFactorIntervalValue:3,twoFactorIntervalUnit:'months'}};
 
 async function loadAll():Promise<Data>{
-  const [s,u,m,sc,cf,a,e,me,r,n,ay,se]=await Promise.all([
+  const [s,u,m,sc,cf,tu,a,e,me,r,n,ay,se]=await Promise.all([
     supabase.from('sabado_students').select('*').is('deleted_at',null).order('name'),
     supabase.from('sabado_users').select('*').is('deleted_at',null).order('name'),
     supabase.from('sabado_mothers').select('*').is('deleted_at',null).order('name'),
     supabase.from('sabado_schedules').select('*').is('deleted_at',null).order('date'),
     supabase.from('sabado_schedule_confirmations').select('*'),
+    supabase.from('sabado_teacher_unavailability').select('*').order('date'),
     supabase.from('sabado_attendance').select('*').is('deleted_at',null).order('date',{ascending:false}),
     supabase.from('sabado_events').select('*').is('deleted_at',null).order('date'),
     supabase.from('sabado_meetings').select('*').is('deleted_at',null).order('date'),
@@ -129,7 +131,7 @@ async function loadAll():Promise<Data>{
     supabase.from('sabado_academic_years').select('*').order('year',{ascending:false}),
     supabase.from('sabado_settings').select('*').eq('id',1).maybeSingle()
   ]);
-  const err=[s.error,u.error,m.error,sc.error,cf.error,a.error,e.error,me.error,r.error,n.error,ay.error,se.error].find(Boolean);
+  const err=[s.error,u.error,m.error,sc.error,cf.error,tu.error,a.error,e.error,me.error,r.error,n.error,ay.error,se.error].find(Boolean);
   if(err) throw err;
   return {
     students:(s.data||[]).map((x:any)=>({id:x.id,name:x.name,birth:dateOnly(x.birth),group:x.group_name||'A definir',guardian:x.guardian||'',phone:x.phone||'',notes:x.notes||'',ageInfo:x.age_info||''})),
@@ -137,6 +139,7 @@ async function loadAll():Promise<Data>{
     mothers:(m.data||[]).map((x:any)=>({id:x.id,name:x.name,phone:x.phone||'',email:x.email||'',notes:x.notes||'',active:x.active!==false,birth:dateOnly(x.birth),ageInfo:x.age_info||''})),
     schedules:(sc.data||[]).map((x:any)=>({id:x.id,date:dateOnly(x.date),time:x.time?String(x.time).slice(0,5):'',adolescentTeacher:x.adolescent_teacher||'',youngerTeacher:x.younger_teacher||'',cleaningHelper:x.cleaning_helper||'',topic:x.topic||'',replacementReason:x.replacement_reason||''})),
     scheduleConfirmations:(cf.data||[]).map((x:any)=>({id:x.id,scheduleId:x.schedule_id,userId:x.user_id,assignment:x.assignment,status:x.status,respondedAt:x.responded_at||''})),
+    teacherUnavailability:(tu.data||[]).map((x:any)=>({id:x.id,userId:x.user_id,date:dateOnly(x.date),reason:x.reason||''})),
     attendance:(a.data||[]).map((x:any)=>({id:x.id,date:dateOnly(x.date),teacher:x.teacher,group:x.group_name,entries:Array.isArray(x.entries)?x.entries:[]})),
     events:(e.data||[]).map((x:any)=>({id:x.id,title:x.title,date:dateOnly(x.date),type:x.type,time:x.time?String(x.time).slice(0,5):'',notes:x.notes||''})),
     meetings:(me.data||[]).map((x:any)=>({id:x.id,title:x.title,date:dateOnly(x.date),time:x.time?String(x.time).slice(0,5):'',location:x.location||'',notes:x.notes||''})),
@@ -317,7 +320,7 @@ function App(){
     ['Ano letivo','academic-year',CalendarDays,'view_academic_year']
   ] as const;
   const nav=navConfig.filter(([, , ,perm])=>can(perm as PermissionKey));
-  const personal=[['Minhas Escalas','my-schedules',ClipboardCheck],['Minha Segurança','security',ShieldCheck]] as const;
+  const personal=[['Minhas Escalas','my-schedules',ClipboardCheck],['Minha Disponibilidade','availability',CalendarDays],['Minha Segurança','security',ShieldCheck]] as const;
   const extra=admin?[['Lixeira','trash',Trash2],['Auditoria','audit',History],...(ownerOnly?[['Central do Sistema','system-center',Activity] as const]:[]),['Configurações','settings',Settings],['Administração','admin',UserCog]] as const:[];
 
   // Mostra somente notificações realmente novas. As que foram lidas ou excluídas permanecem ocultas após recarregar a página.
@@ -401,6 +404,7 @@ function App(){
     page==='celebrations'&&can('view_celebrations')?<Celebrations data={data} admin={can('manage_celebrations')} reload={reload} toast={toast} selectedYear={selectedYear} closed={selectedYearClosed}/>:
     page==='users'&&can('view_users')?<UsersPage data={data} admin={admin} reload={reload} toast={toast}/>:
     page==='my-schedules'?<MySchedulesPage data={data} currentUser={currentUser} reload={reload} toast={toast} selectedYear={selectedYear}/>:
+    page==='availability'?<TeacherAvailabilityPage data={data} currentUser={currentUser} reload={reload} toast={toast} selectedYear={selectedYear}/>:
     page==='security'?<MySecurityPage currentUser={currentUser} toast={toast}/>:
     page==='academic-year'&&can('view_academic_year')?<AcademicYearPage data={data} selectedYear={selectedYear} setSelectedYear={setSelectedYear} reload={reload} toast={toast} admin={admin}/>:
     page==='trash'&&admin?<TrashPage data={data} reload={reload} toast={toast}/>:
@@ -715,17 +719,24 @@ function Schedules({data,admin,reload,toast,selectedYear,closed}:{data:Data;admi
       if(s.cleaningHelper&&momCount[s.cleaningHelper]!==undefined){momCount[s.cleaningHelper]++;momLast[s.cleaningHelper]=s.date}
     });
 
-    const pick=(pool:string[],counts:Record<string,number>,last:Record<string,string>,avoid='')=>{
-      const available=pool.length>1&&avoid?pool.filter(n=>n!==avoid):pool;
+    const normalizeName=(v:string)=>(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+    const userByName=(name:string)=>activeTeachers.find(u=>normalizeName(u.name)===normalizeName(name)||normalizeName(u.loginName)===normalizeName(name));
+    const unavailable=(name:string,date:string)=>{
+      const user=userByName(name);
+      return !!user&&data.teacherUnavailability.some(x=>x.userId===user.id&&x.date===date);
+    };
+    const pick=(pool:string[],counts:Record<string,number>,last:Record<string,string>,date:string,avoid='')=>{
+      const eligible=pool.filter(n=>!unavailable(n,date));
+      const available=eligible.length>1&&avoid?eligible.filter(n=>n!==avoid):eligible;
       return [...available].sort((a,b)=>(counts[a]||0)-(counts[b]||0)||String(last[a]||'').localeCompare(String(last[b]||''))||a.localeCompare(b,'pt-BR'))[0]||'';
     };
 
     const rows:Omit<Schedule,'id'>[]=dates.map(date=>{
-      const adolescentTeacher=pick(adPool,adCount,adLast);
+      const adolescentTeacher=pick(adPool,adCount,adLast,date);
       if(adolescentTeacher){adCount[adolescentTeacher]=(adCount[adolescentTeacher]||0)+1;adLast[adolescentTeacher]=date}
-      const youngerTeacher=pick(yoPool,yoCount,yoLast,adolescentTeacher);
+      const youngerTeacher=pick(yoPool,yoCount,yoLast,date,adolescentTeacher);
       if(youngerTeacher){yoCount[youngerTeacher]=(yoCount[youngerTeacher]||0)+1;yoLast[youngerTeacher]=date}
-      const cleaningHelper=pick(momPool,momCount,momLast);
+      const cleaningHelper=pick(momPool,momCount,momLast,date);
       if(cleaningHelper){momCount[cleaningHelper]=(momCount[cleaningHelper]||0)+1;momLast[cleaningHelper]=date}
       return{date,time:autoTime||'14:00',adolescentTeacher,youngerTeacher,cleaningHelper,topic:autoTopic.trim()||'A definir',replacementReason:'Gerada automaticamente pelo sistema'};
     });
@@ -755,9 +766,57 @@ function Schedules({data,admin,reload,toast,selectedYear,closed}:{data:Data;admi
   return <><div className="section-head schedule-section-head"><Title t="Escalas" s="Professores dos adolescentes, professores dos menores, mães auxiliares e assunto de cada sábado."/>{admin&&!closed&&<div className="schedule-top-actions"><button className="auto-generate-btn compact-action" onClick={()=>{setAutoOpen(true);setAutoPreview([])}}><CalendarDays size={17}/> Gerar automaticamente</button><button className="primary compact-action" onClick={()=>setShowAdd(true)}><Plus size={17}/> Adicionar escala</button></div>}</div>
   {admin&&!closed&&showAdd&&<div className="panel form data-form schedule-add-form"><div className="schedule-form-head"><h3><Plus size={18}/> Nova escala</h3><button className="icon-close schedule-form-close" title="Fechar" onClick={()=>setShowAdd(false)}><X size={18}/></button></div><input type="date" value={f.date} onChange={e=>setF({...f,date:e.target.value})}/><input type="time" value={f.time} onChange={e=>setF({...f,time:e.target.value})}/><select value={f.adolescentTeacher} onChange={e=>setF({...f,adolescentTeacher:e.target.value})}><option value="">Professor — Adolescentes</option>{teacherNames.map(t=><option key={t}>{t}</option>)}</select><select value={f.youngerTeacher} onChange={e=>setF({...f,youngerTeacher:e.target.value})}><option value="">Professor — Menores</option>{teacherNames.map(t=><option key={t}>{t}</option>)}</select><select value={f.cleaningHelper} onChange={e=>setF({...f,cleaningHelper:e.target.value})}><option value="">Mãe — Auxílio na Limpeza</option>{activeMothers.map(m=><option key={m.id}>{m.name}</option>)}</select><input placeholder="Tema da palestra / assunto" value={f.topic} onChange={e=>setF({...f,topic:e.target.value})}/><button className="primary" onClick={save}><Save size={17}/> Salvar escala</button></div>}
   {closed&&<div className="closed-year-note">🔒 Ano {selectedYear} encerrado. Escalas apenas para consulta.</div>}<div className="panel schedule-panel">{yearSchedules.map(s=><div className="schedule-row" key={s.id}><div className="schedule-date"><b>{fmt(s.date)}</b><small>sábado · {s.time||'horário a definir'}</small>{admin&&!closed&&<div className="schedule-actions"><button className="edit-schedule" onClick={()=>setEdit({...s})}><Pencil size={15}/> Alterar</button><button className="danger-icon schedule-delete" title="Excluir escala" onClick={()=>del(s)}><Trash2 size={15}/></button></div>}</div><div className="schedule-field"><span className="field-label">Adolescentes</span><span className="text-separator">-</span><b>{s.adolescentTeacher}</b></div><div className="schedule-field"><span className="field-label">Menores</span><span className="text-separator">-</span><b>{s.youngerTeacher}</b></div><div className="schedule-field"><span className="field-label">Mãe - limpeza</span><span className="text-separator">-</span><b>{s.cleaningHelper||'—'}</b></div><div className="schedule-topic schedule-field"><span className="field-label">Assunto</span><span className="text-separator">-</span><b>{s.topic}</b></div></div>)}</div>
-  {admin&&!closed&&autoOpen&&<Modal title="Gerar escala automática" close={()=>{setAutoOpen(false);setAutoPreview([])}}><div className="auto-schedule-config"><label>Mês da escala</label><input type="month" value={autoMonth} onChange={e=>{setAutoMonth(e.target.value);setAutoPreview([])}}/><label>Horário padrão</label><input type="time" value={autoTime} onChange={e=>{setAutoTime(e.target.value);setAutoPreview([])}}/><label>Assunto padrão</label><input value={autoTopic} onChange={e=>{setAutoTopic(e.target.value);setAutoPreview([])}} placeholder="Ex.: A definir"/><div className="auto-rules"><b>Regras usadas automaticamente</b><span>• Professores ativos entram no rodízio.</span><span>• “Geral” pode atuar nas duas turmas.</span><span>• O sistema prioriza quem participou menos vezes.</span><span>• Evita o mesmo professor nas duas turmas no mesmo sábado, quando possível.</span><span>• Mães ativas entram no rodízio da limpeza.</span><span>• Sábados que já possuem escala são ignorados.</span></div><button className="primary" onClick={generateAutomatic}><CalendarDays size={17}/> Gerar prévia do mês</button></div>
+  {admin&&!closed&&autoOpen&&<Modal title="Gerar escala automática" close={()=>{setAutoOpen(false);setAutoPreview([])}}><div className="auto-schedule-config"><label>Mês da escala</label><input type="month" value={autoMonth} onChange={e=>{setAutoMonth(e.target.value);setAutoPreview([])}}/><label>Horário padrão</label><input type="time" value={autoTime} onChange={e=>{setAutoTime(e.target.value);setAutoPreview([])}}/><label>Assunto padrão</label><input value={autoTopic} onChange={e=>{setAutoTopic(e.target.value);setAutoPreview([])}} placeholder="Ex.: A definir"/><div className="auto-rules"><b>Regras usadas automaticamente</b><span>• Professores ativos entram no rodízio.</span><span>• “Geral” pode atuar nas duas turmas.</span><span>• O sistema prioriza quem participou menos vezes.</span><span>• Professores que marcaram indisponibilidade naquele sábado não entram na escala.</span><span>• Evita o mesmo professor nas duas turmas no mesmo sábado, quando possível.</span><span>• Mães ativas entram no rodízio da limpeza.</span><span>• Sábados que já possuem escala são ignorados.</span></div><button className="primary" onClick={generateAutomatic}><CalendarDays size={17}/> Gerar prévia do mês</button></div>
   {autoPreview.length>0&&<div className="auto-preview"><h3>Prévia — revise antes de salvar</h3>{autoPreview.map((r,i)=><div className="auto-preview-row" key={r.date}><div className="auto-preview-date"><b>{fmt(r.date)}</b><small>sábado · {r.time||'horário a definir'}</small></div><label>Adolescentes<select value={r.adolescentTeacher} onChange={e=>changeAuto(i,{adolescentTeacher:e.target.value})}>{teacherNames.map(t=><option key={t}>{t}</option>)}</select></label><label>Menores<select value={r.youngerTeacher} onChange={e=>changeAuto(i,{youngerTeacher:e.target.value})}>{teacherNames.map(t=><option key={t}>{t}</option>)}</select></label><label>Mãe — limpeza<select value={r.cleaningHelper} onChange={e=>changeAuto(i,{cleaningHelper:e.target.value})}><option value="">—</option>{activeMothers.map(m=><option key={m.id}>{m.name}</option>)}</select></label><label className="auto-topic">Assunto<input value={r.topic} onChange={e=>changeAuto(i,{topic:e.target.value})}/></label></div>)}<button className="primary" disabled={autoSaving} onClick={saveAutomatic}><Save size={17}/> {autoSaving?'Salvando...':'Confirmar e salvar escalas'}</button></div>}</Modal>}
   {admin&&!closed&&edit&&<Modal title="Alterar escala" close={()=>setEdit(null)}><label>Data</label><input type="date" value={edit.date} onChange={e=>setEdit({...edit,date:e.target.value})}/><label>Horário</label><input type="time" value={edit.time||''} onChange={e=>setEdit({...edit,time:e.target.value})}/><label>Professor — Adolescentes</label><select value={edit.adolescentTeacher} onChange={e=>setEdit({...edit,adolescentTeacher:e.target.value})}>{teacherNames.map(t=><option key={t}>{t}</option>)}</select><label>Professor — Menores</label><select value={edit.youngerTeacher} onChange={e=>setEdit({...edit,youngerTeacher:e.target.value})}>{teacherNames.map(t=><option key={t}>{t}</option>)}</select><label>Mãe — Auxílio na Limpeza</label><select value={edit.cleaningHelper} onChange={e=>setEdit({...edit,cleaningHelper:e.target.value})}><option value="">—</option>{activeMothers.map(m=><option key={m.id}>{m.name}</option>)}</select><label>Assunto</label><input value={edit.topic} onChange={e=>setEdit({...edit,topic:e.target.value})}/><label>Motivo da substituição</label><input value={edit.replacementReason} onChange={e=>setEdit({...edit,replacementReason:e.target.value})}/><button className="primary" onClick={update}>Salvar alteração</button></Modal>}</>
+}
+
+function TeacherAvailabilityPage({data,currentUser,reload,toast,selectedYear}:{data:Data;currentUser:UserRec|null;reload:()=>Promise<void>;toast:(s:string)=>void;selectedYear:number}){
+  const currentMonth=new Date().getMonth()+1;
+  const currentYear=new Date().getFullYear();
+  const [month,setMonth]=useState(()=>`${selectedYear}-${String(selectedYear===currentYear?currentMonth:1).padStart(2,'0')}`);
+  const [savingDate,setSavingDate]=useState('');
+  useEffect(()=>{setMonth(`${selectedYear}-${String(selectedYear===currentYear?currentMonth:1).padStart(2,'0')}`)},[selectedYear]);
+
+  if(!currentUser)return <><Title t="Minha Disponibilidade" s="Informe os sábados em que você não poderá participar."/><Empty text="Usuário não identificado."/></>;
+
+  const monthSaturdays=(ym:string)=>{
+    const[y,m]=ym.split('-').map(Number);if(!y||!m)return[] as string[];
+    const result:string[]=[];const d=new Date(y,m-1,1);
+    while(d.getMonth()===m-1&&d.getDay()!==6)d.setDate(d.getDate()+1);
+    while(d.getMonth()===m-1){result.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);d.setDate(d.getDate()+7)}
+    return result;
+  };
+  const norm=(v:string)=>(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+  const names=new Set([norm(currentUser.name),norm(currentUser.loginName)]);
+  const own=data.teacherUnavailability.filter(x=>x.userId===currentUser.id);
+  const today=new Date().toISOString().slice(0,10);
+  const saturdays=monthSaturdays(month);
+  const scheduleFor=(date:string)=>data.schedules.find(s=>s.date===date&&(names.has(norm(s.adolescentTeacher))||names.has(norm(s.youngerTeacher))));
+
+  const toggle=async(date:string)=>{
+    if(date<today)return toast('Não é possível alterar uma data que já passou.');
+    const existing=own.find(x=>x.date===date);setSavingDate(date);
+    try{
+      if(existing){
+        const{error}=await supabase.from('sabado_teacher_unavailability').delete().eq('id',existing.id);
+        if(error)return toast(error.message);
+        toast('Sábado marcado novamente como disponível.');
+      }else{
+        const{error}=await supabase.from('sabado_teacher_unavailability').insert({user_id:currentUser.id,date,reason:''});
+        if(error)return toast(error.message);
+        toast(scheduleFor(date)?'Indisponibilidade registrada. Você já possui escala nessa data; avise o administrador.':'Indisponibilidade registrada. A geração automática evitará esta data.');
+      }
+      await reload();
+    }finally{setSavingDate('')}
+  };
+
+  return <><Title t="Minha Disponibilidade" s="Marque os sábados em que você não poderá participar. A geração automática de escalas respeitará essas datas."/>
+    <div className="panel availability-toolbar"><label>Mês</label><input type="month" value={month} min={`${selectedYear}-01`} max={`${selectedYear}-12`} onChange={e=>setMonth(e.target.value)}/><div className="availability-legend"><span className="availability-dot available-dot"/> Disponível <span className="availability-dot unavailable-dot"/> Não poderei participar</div></div>
+    <div className="availability-grid">{saturdays.map(date=>{const unavailable=own.some(x=>x.date===date);const scheduled=scheduleFor(date);const past=date<today;return <div className={`availability-card ${unavailable?'is-unavailable':''} ${past?'is-past':''}`} key={date}><div className="availability-date"><CalendarDays size={20}/><div><b>{fmt(date)}</b><small>Sábado</small></div></div>{scheduled&&<span className="availability-scheduled">📚 Você já está escalado(a)</span>}<div className={`availability-status ${unavailable?'status-no':'status-yes'}`}>{unavailable?'❌ Não poderei participar':'✅ Disponível'}</div><button disabled={past||savingDate===date} className={unavailable?'availability-restore':'availability-block'} onClick={()=>toggle(date)}>{savingDate===date?'Salvando...':past?'Data passada':unavailable?'Marcar como disponível':'Não poderei participar'}</button></div>})}</div>
+    {!saturdays.length&&<Empty text="Nenhum sábado encontrado para este mês."/>}
+    <div className="availability-note"><b>Como funciona</b><span>As datas marcadas como indisponíveis ficam salvas no sistema e não entram no rodízio da geração automática. Você pode voltar a marcar a data como disponível enquanto ela ainda não tiver passado.</span></div>
+  </>;
 }
 
 function MySchedulesPage({data,currentUser,reload,toast,selectedYear}:{data:Data;currentUser:UserRec|null;reload:()=>Promise<void>;toast:(s:string)=>void;selectedYear:number}){
@@ -1343,9 +1402,9 @@ function SystemCenterPage(){
   const[info,setInfo]=useState<SystemOverview|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[backingUp,setBackingUp]=useState(false),[emailingBackup,setEmailingBackup]=useState(false),[backupMsg,setBackupMsg]=useState(''),[backupUrl,setBackupUrl]=useState(''),[backupName,setBackupName]=useState('');
   const load=async()=>{
     setLoading(true);setError('');
-    const{data,error}=await supabase.rpc('sabado_system_overview_v87');
+    const{data,error}=await supabase.rpc('sabado_system_overview_v88');
     if(error){setError(error.message||'Não foi possível carregar as informações do sistema.');setInfo(null)}
-    else setInfo({...((data||{}) as SystemOverview),app_version:'V86'});
+    else setInfo({...((data||{}) as SystemOverview),app_version:'V88'});
     setLoading(false);
   };
   const generateBackup=async()=>{

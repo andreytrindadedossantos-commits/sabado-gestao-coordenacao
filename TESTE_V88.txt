@@ -1,0 +1,20 @@
+TESTES V88
+
+Banco de dados:
+- Tabela sabado_teacher_unavailability criada: OK
+- RLS e políticas por usuário/admin: OK
+- Registro de sábado indisponível com sessão de professor temporário: OK
+- Registro temporário removido com ROLLBACK: OK
+- Backup retorna teacher_unavailability como array: OK
+- Central retorna versão V88: OK
+
+Frontend:
+- Tela Minha Disponibilidade adicionada ao menu pessoal.
+- Listagem automática dos sábados do mês.
+- Marcar/desmarcar indisponibilidade.
+- Bloqueio de datas passadas.
+- Gerador automático filtra professores indisponíveis por data.
+- CSS responsivo incluído para desktop/tablet/mobile.
+
+Observação:
+O npm install deste ambiente excedeu o limite de tempo. A verificação do TypeScript não apontou erro sintático novo na V88; os erros exibidos pelo tsc sem dependências instaladas são de módulos ausentes e dois avisos já existentes na Central do Sistema.

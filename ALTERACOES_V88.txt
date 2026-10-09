@@ -1,0 +1,28 @@
+V88 — Disponibilidade dos Professores
+
+NOVO
+- Tela "Minha Disponibilidade" para todos os usuários/professores ativos.
+- Cada professor pode marcar os sábados em que não poderá participar.
+- A indisponibilidade fica salva no Supabase por usuário e data.
+- É possível desfazer a indisponibilidade e tornar o sábado disponível novamente.
+- Datas passadas ficam bloqueadas para alteração.
+- A tela informa quando o professor já possui escala naquela data.
+
+GERAÇÃO AUTOMÁTICA DE ESCALAS
+- O gerador automático passa a consultar as indisponibilidades registradas.
+- Professor marcado como indisponível em um sábado é removido do rodízio daquela data.
+- Mantidas as regras anteriores de equilíbrio, turma e não repetição quando possível.
+- Se não houver professor disponível, a prévia ficará sem professor e deverá ser revisada antes do salvamento.
+
+SEGURANÇA
+- Professor vê e altera somente a própria disponibilidade.
+- Administrador consegue consultar as indisponibilidades necessárias para gerar as escalas.
+- RLS habilitado na tabela sabado_teacher_unavailability.
+
+BACKUP / CENTRAL
+- Backup passa a incluir as indisponibilidades dos professores.
+- Central do Sistema passa a identificar a versão V88.
+
+RESPONSIVIDADE
+- Tela adaptada para PC, tablet e celular.
+- No celular, os sábados são exibidos em cartões de largura total com botão grande para toque.
